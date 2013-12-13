@@ -1,0 +1,23 @@
+graph p {
+
+	edge [style="invis"];
+	ranksep=-1;
+
+	subgraph cluster_all {
+		subgraph cluster_right {
+			node [shape=ellipse];
+			n45 [label="4\n\n5"];
+			n67 [label="6\n\n7"];
+			n45 -- n67;
+		}
+
+		subgraph cluster_left {
+			node [shape=ellipse];
+			n01 [label="0\n\n1"];
+			n23 [label="2\n\n3"];
+			n01 -- n23;
+		}
+		style=dotted;
+	}
+}
+
