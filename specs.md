@@ -24,8 +24,13 @@ December 13, 2013
 
 - Total Number of Files
 - Total Number of Partitions
-- Location and Offset List
-    - (`partition number`, `file number`, `byte offset`)
+- Partition Details
+    - Partition number
+    - Partition file
+    - Partition offset (within file)
+    - Partition size
+    - lp count
+    - event count
 
 ### Partition Header
 
