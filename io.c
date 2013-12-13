@@ -3,19 +3,22 @@
 //Decemeber 13, 2013
 
 #include <string.h>
+#include <stdlib.h>
+#include <assert.h>
 #include "io.h"
 
 char * g_io_master_filename;
-FILE *g_io_files[];
-int g_io_partition_file[];
-int g_io_partition_offest[];
-int g_io_partition_size[];
-int g_io_partition_lp_count[];
-int g_io_partition_event_count[];
+FILE ** g_io_files;
+int * g_io_partition_file;
+int * g_io_partition_offest;
+int * g_io_partition_size;
+int * g_io_partition_lp_count;
+int * g_io_partition_event_count;
 
-void io_read_master_header(char * filename) {
+void io_read_master_header(char * path, char * filename) {
+	// path = dirname(argv[0]);
+
 	g_io_master_filename = (char *) calloc(1024, sizeof(char));
-	char *path = dirname(argv[0]);
     strcpy(g_io_master_filename, path);
     strcat(g_io_master_filename, filename);
     
