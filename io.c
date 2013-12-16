@@ -11,6 +11,29 @@ char * g_io_master_filename;
 FILE ** g_io_files;
 io_partition * g_io_partitions;
 
+// local init flag (space has been allocated)
+int l_init_flag = 0;
+
+void io_init(int num_files, int num_partitions) {
+	g_io_number_of_files = num_files;
+	g_io_number_of_partitions = num_partitions;
+
+	g_io_files = (FILE **) calloc(g_io_number_of_files, sizeof(FILE*));
+    g_io_partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition));
+
+    l_init_flag = 1;
+}
+
+void io_final() {
+	g_io_number_of_files = 0;
+	g_io_number_of_partitions = 0;
+
+	free(g_io_files);
+	free(g_io_partitions);
+	
+	l_init_flag = 0;
+}
+
 void io_read_master_header(char * path, char * filename) {
 	// path = dirname(argv[0]);
 
@@ -21,10 +44,16 @@ void io_read_master_header(char * path, char * filename) {
     FILE * master_header = fopen(g_io_master_filename, "r");
     assert(master_header && "Can not open master header to read\n");
 
-    fscanf(master_header, "%d %d", &g_io_number_of_files, &g_io_number_of_partitions);
+    int num_files = 0;
+    int num_partitions = 0;
+    fscanf(master_header, "%d %d", &num_files, &num_partitions);
 
-    g_io_files = (FILE **) calloc(g_io_number_of_files, sizeof(FILE*));
-    g_io_partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition));
+    if (!l_init_flag) {
+    	io_init(num_files, num_partitions);
+    }
+
+    assert(num_files == g_io_files && "Error: Master Header indicated a different number of files than was previously allocated\n");
+    assert(num_partitions == g_io_partitions && "Error: Master Header indicated a different number of partitions than was previouly allocated\n");
 
 	int i;
 	while (fscanf(master_header, "%d", &i) != EOF) {
