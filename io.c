@@ -9,11 +9,7 @@
 
 char * g_io_master_filename;
 FILE ** g_io_files;
-int * g_io_partition_file;
-int * g_io_partition_offest;
-int * g_io_partition_size;
-int * g_io_partition_lp_count;
-int * g_io_partition_event_count;
+io_partition * g_io_partitions;
 
 void io_read_master_header(char * path, char * filename) {
 	// path = dirname(argv[0]);
@@ -28,16 +24,11 @@ void io_read_master_header(char * path, char * filename) {
     fscanf(master_header, "%d %d", &g_io_number_of_files, &g_io_number_of_partitions);
 
     g_io_files = (FILE **) calloc(g_io_number_of_files, sizeof(FILE*));
-
-	g_io_partition_file = (int *) calloc(g_io_number_of_partitions, sizeof(int));
-	g_io_partition_offest = (int *) calloc(g_io_number_of_partitions, sizeof(int));
-	g_io_partition_size = (int *) calloc(g_io_number_of_partitions, sizeof(int));
-	g_io_partition_lp_count = (int *) calloc(g_io_number_of_partitions, sizeof(int));
-	g_io_partition_event_count = (int *) calloc(g_io_number_of_partitions, sizeof(int));
+    g_io_partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition));
 
 	int i;
 	while (fscanf(master_header, "%d", &i) != EOF) {
-		fscanf(master_header, "%d %d %d %d %d", &g_io_partition_file[i], &g_io_partition_offest[i], &g_io_partition_size[i], &g_io_partition_lp_count[i], &g_io_partition_event_count[i]);
+		fscanf(master_header, "%d %d %d %d %d", &(g_io_partitions[i].file), &(g_io_partitions[i].offest), &(g_io_partitions[i].size), &(g_io_partitions[i].lp_count), &(g_io_partitions[i].event_count));
 	}
 
 	fclose(master_header);
@@ -55,7 +46,7 @@ void io_write_master_header(char * check_point_name) {
 	fprintf(master_header, "%d %d\n", g_io_number_of_files, g_io_number_of_partitions);
 	int i;
 	for (i = 0; i < g_io_number_of_partitions; i++) {
-		fprintf(master_header, "%d %d %d %d %d %d\n", i, g_io_partition_file[i], g_io_partition_offest[i], g_io_partition_size[i], g_io_partition_lp_count[i], g_io_partition_event_count[i]);
+		fprintf(master_header, "%d %d %d %d %d %d\n", i, g_io_partitions[i].file, g_io_partitions[i].offest, g_io_partitions[i].size, g_io_partitions[i].lp_count, g_io_partitions[i].event_count);
 	}
 
 	fclose(master_header);

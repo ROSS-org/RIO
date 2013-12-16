@@ -11,12 +11,16 @@ extern int g_io_number_of_files;
 // length = g_io_number_of_files
 extern FILE ** g_io_files;
 
+typedef struct {
+	int file;
+	int offest;
+	int size;
+	int lp_count;
+	int event_count;
+} io_partition;
+
 // length = g_io_number_of_partitions
-extern int * g_io_partition_file;
-extern int * g_io_partition_offest;
-extern int * g_io_partition_size;
-extern int * g_io_partition_lp_count;
-extern int * g_io_partition_event_count;
+extern io_partition * g_io_partitions;
 
 void io_read_master_header(char * path, char * filename);
 void io_write_master_header(char * check_point_name);
