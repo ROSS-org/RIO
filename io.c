@@ -50,7 +50,7 @@ void io_read_master_header(char * master_filename) {
 
 	int i;
 	while (fscanf(master_header, "%d", &i) != EOF) {
-		fscanf(master_header, "%d %d %d %d %d", &(g_io_partitions[i].file), &(g_io_partitions[i].offest), &(g_io_partitions[i].size), &(g_io_partitions[i].lp_count), &(g_io_partitions[i].event_count));
+		fscanf(master_header, "%d %d %d %d %d", &(g_io_partitions[i].file), &(g_io_partitions[i].offset), &(g_io_partitions[i].size), &(g_io_partitions[i].lp_count), &(g_io_partitions[i].event_count));
 	}
 
 	fclose(master_header);
@@ -64,7 +64,7 @@ void io_write_master_header(char * master_filename) {
 	fprintf(master_header, "%d %d\n", g_io_number_of_files, g_io_number_of_partitions);
 	int i;
 	for (i = 0; i < g_io_number_of_partitions; i++) {
-		fprintf(master_header, "%d %d %d %d %d %d\n", i, g_io_partitions[i].file, g_io_partitions[i].offest, g_io_partitions[i].size, g_io_partitions[i].lp_count, g_io_partitions[i].event_count);
+		fprintf(master_header, "%d %d %d %d %d %d\n", i, g_io_partitions[i].file, g_io_partitions[i].offset, g_io_partitions[i].size, g_io_partitions[i].lp_count, g_io_partitions[i].event_count);
 	}
 
 	fclose(master_header);

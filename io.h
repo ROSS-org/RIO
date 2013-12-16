@@ -12,7 +12,7 @@ extern FILE ** g_io_files;
 
 typedef struct {
 	int file;
-	int offest;
+	int offset;
 	int size;
 	int lp_count;
 	int event_count;
