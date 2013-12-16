@@ -7,7 +7,6 @@
 #include <assert.h>
 #include "io.h"
 
-char * g_io_master_filename;
 FILE ** g_io_files;
 io_partition * g_io_partitions;
 
@@ -34,14 +33,8 @@ void io_final() {
 	l_init_flag = 0;
 }
 
-void io_read_master_header(char * path, char * filename) {
-	// path = dirname(argv[0]);
-
-	g_io_master_filename = (char *) calloc(1024, sizeof(char));
-    strcpy(g_io_master_filename, path);
-    strcat(g_io_master_filename, filename);
-    
-    FILE * master_header = fopen(g_io_master_filename, "r");
+void io_read_master_header(char * master_filename) {
+    FILE * master_header = fopen(master_filename, "r");
     assert(master_header && "Can not open master header to read\n");
 
     int num_files = 0;
@@ -63,13 +56,9 @@ void io_read_master_header(char * path, char * filename) {
 	fclose(master_header);
 }
 
-void io_write_master_header(char * check_point_name) {
-	char filename[1024];
-	strcpy(filename, g_io_master_filename);
-	strcat(filename, ".");
-	strcat(filename, check_point_name);
+void io_write_master_header(char * master_filename) {
 
-	FILE * master_header = fopen(filename, "w");
+	FILE * master_header = fopen(master_filename, "w");
 	assert(master_header && "Can not open master header to write checkpoint\n");
 
 	fprintf(master_header, "%d %d\n", g_io_number_of_files, g_io_number_of_partitions);
