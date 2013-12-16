@@ -46,3 +46,11 @@ December 13, 2013
 ## API Specification
 
 
+## Coding Standards
+
+This code loosely adheres to the ROSS coding standard:
+
+- global variables begin with a `g`
+- functions and variables within this module are prefaced with `io`
+- underscores are used between words (in preference to camel case)
+
