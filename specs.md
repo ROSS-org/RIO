@@ -21,28 +21,33 @@ December 13, 2013
 - [Master Header file](#Master_Header)
 - 1 or more Data files
 
-### Master Header
+### Master Header File
 
+The master header contains all of the meta-data for the partitions. 
+This file is human readable, but is explicitly defined and contains only numbers.
+
+The first line contains:
 - Total Number of Files
 - Total Number of Partitions
-- Partition Details
-    - Partition number
-    - Partition file
-    - Partition offset (within file)
-    - Partition size
-    - lp count
-    - event count
 
-### Partition Header
+Each of the following lines contians the meta-data for one partition:
+- Partition number
+- Partition file
+- Partition offset (within file)
+- Partition size
+- LP count
+- Event count
 
-- Number of LPs in partition
-- Number of Events in partition
-- Total Size of Partition
+### Data Files
 
-### Data Header
+The data files contain only binary data. 
+There are no per-file or per-partition headers. 
+However, each segment of data (LP or event) has it's own header:
 
 - Data type (LP or event type)
 - Size
+
+The model must provide a data reader and writer for each LP and event type.
 
 ## API Specification
 
@@ -55,3 +60,4 @@ This code loosely adheres to the ROSS coding standard:
 - functions and variables within this module are prefaced with `io`
 - underscores are used between words (in preference to camel case)
 
+## Use Cases and Tests
