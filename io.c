@@ -7,8 +7,14 @@
 #include <assert.h>
 #include "io.h"
 
+// Null Initializations
 FILE ** g_io_files;
 io_partition * g_io_partitions;
+
+// Default Values
+g_io_number_of_files = 0;
+g_io_number_of_partitions = 0;
+g_io_partitions_per_rank = 0;
 
 // local init flag (space has been allocated)
 int l_init_flag = 0;
