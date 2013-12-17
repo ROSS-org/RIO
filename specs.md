@@ -5,7 +5,7 @@ December 13, 2013
 
 ## Layout Specification
 
-- [Master Header file](#Master_Header)
+- Master Header file
 - 1 or more Data files
 
 ### Master Header File
