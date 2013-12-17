@@ -3,19 +3,6 @@
 
 December 13, 2013
 
-## Design Decisions and Assumptions
-
-- The master header is separated into its own file
-- Data files contain one or more whole parition descriptions
-- Partitions are enumerated linearly
-- LPs are sequentially enumerated within partitions
-- Partitions always represent max granularity
-- The model is responsible for providing LP and event readers and writers
-- Partitions are linearly combined to form larger blocks (see image)
-- Each MPI Rank has the same number of partitions
-
-![Linear Partition Combinations](partitions.pdf)
-
 ## Layout Specification
 
 - [Master Header file](#Master_Header)
@@ -48,6 +35,20 @@ However, each segment of data (LP or event) has it's own header:
 - Size
 
 The model must provide a data reader and writer for each LP and event type.
+
+## Design Decisions and Assumptions
+
+- The master header is separated into its own file
+- Data files contain one or more whole parition descriptions
+- Partitions are enumerated linearly
+- LPs are sequentially enumerated within partitions
+- Partitions always represent max granularity
+- The model is responsible for providing LP and event readers and writers
+- Partitions are linearly combined to form larger blocks (see image)
+- Each MPI Rank has the same number of partitions
+
+![Linear Partition Combinations](partitions.pdf)
+
 
 ## API Specification
 
