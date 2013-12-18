@@ -16,6 +16,7 @@ This file is human readable, but is explicitly defined and contains only numbers
 The first line contains:
 - Total Number of Files
 - Total Number of Partitions
+- Size of meta-data for a single partition (for block reading)
 
 Each of the following lines contians the meta-data for one partition:
 - Partition number
