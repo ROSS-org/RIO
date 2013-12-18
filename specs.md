@@ -48,8 +48,9 @@ The model must provide a data reader and writer for each LP and event type.
 - Partitions are linearly combined to form larger blocks (see image)
 - Each MPI Rank has the same number of partitions
 
+<!---
 ![Linear Partition Combinations](partitions.pdf)
-
+-->
 
 ## API Specification
 
