@@ -81,22 +81,34 @@ void io_load_checkpoint(char * master_filename) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &self);
 	MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
 
+	int partition_md_size;
+	
 	if (self == 0) {
 		// Open master header file
 		FILE * master_header = fopen(master_filename, "r");
 		assert(master_header && "MPI_Task 0 can not open master header to write checkpoint\n");
 
 		// Read first line for global vars
-		fscanf(master_header, "%d %d", &g_io_number_of_files, &g_io_number_of_partitions);
-		g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
-
-		// close the file
-		fclose(master_header);
+		fscanf(master_header, "%d %d %d", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
 	}
 
 	// Broadcast vars across comm
 	MPI_Bcast(&g_io_number_of_files, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&g_io_number_of_partitions, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&g_io_partitions_per_rank, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&partition_md_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+	g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
+
+	// Init local partitions
+	g_io_partitions = (io_partition *) calloc(g_io_partitions_per_rank, sizeof(io_partition));
+
+	if (self == 0) {
+		// Read and distribute meta-data
+		char * block = (char *) calloc(partition_md_size * g_io_partitions_per_rank);
+		
+		// close the file
+		fclose(master_header);
+	} else {
+		// receive meta-data
+	}
 }
