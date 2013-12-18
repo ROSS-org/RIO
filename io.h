@@ -28,3 +28,5 @@ void io_final();
 void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
 
+void io_load_checkpoint(char * master_filename);
+

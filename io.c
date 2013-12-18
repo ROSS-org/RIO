@@ -65,7 +65,7 @@ void io_read_master_header(char * master_filename) {
 void io_write_master_header(char * master_filename) {
 
 	FILE * master_header = fopen(master_filename, "w");
-	assert(master_header && "Can not open master header to write checkpoint\n");
+	assert(master_header && "Can not open master header to write\n");
 
 	fprintf(master_header, "%d %d\n", g_io_number_of_files, g_io_number_of_partitions);
 	int i;
@@ -74,4 +74,29 @@ void io_write_master_header(char * master_filename) {
 	}
 
 	fclose(master_header);
+}
+
+void io_load_checkpoint(char * master_filename) {
+	int self, number_of_mpitasks;
+	MPI_Comm_rank(MPI_COMM_WORLD, &self);
+	MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
+
+	if (self == 0) {
+		// Open master header file
+		FILE * master_header = fopen(master_filename, "r");
+		assert(master_header && "MPI_Task 0 can not open master header to write checkpoint\n");
+
+		// Read first line for global vars
+		fscanf(master_header, "%d %d", &g_io_number_of_files, &g_io_number_of_partitions);
+		g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
+
+		// close the file
+		fclose(master_header);
+	}
+
+	// Broadcast vars across comm
+	MPI_Bcast(&g_io_number_of_files, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&g_io_number_of_partitions, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&g_io_partitions_per_rank, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
 }
