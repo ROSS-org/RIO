@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "mpi.h"
 #include "io.h"
 
 // Null Initializations
@@ -12,9 +13,9 @@ FILE ** g_io_files;
 io_partition * g_io_partitions;
 
 // Default Values
-g_io_number_of_files = 0;
-g_io_number_of_partitions = 0;
-g_io_partitions_per_rank = 0;
+int g_io_number_of_files = 0;
+int g_io_number_of_partitions = 0;
+int g_io_partitions_per_rank = 0;
 
 // local init flag (space has been allocated)
 int l_init_flag = 0;
@@ -51,8 +52,8 @@ void io_read_master_header(char * master_filename) {
     	io_init(num_files, num_partitions);
     }
 
-    assert(num_files == g_io_files && "Error: Master Header indicated a different number of files than was previously allocated\n");
-    assert(num_partitions == g_io_partitions && "Error: Master Header indicated a different number of partitions than was previouly allocated\n");
+    assert(num_files == g_io_number_of_files && "Error: Master Header indicated a different number of files than was previously allocated\n");
+    assert(num_partitions == g_io_number_of_partitions && "Error: Master Header indicated a different number of partitions than was previouly allocated\n");
 
 	int i;
 	while (fscanf(master_header, "%d", &i) != EOF) {
@@ -76,16 +77,30 @@ void io_write_master_header(char * master_filename) {
 	fclose(master_header);
 }
 
+void process_metadata(char * data_block, int self) {
+	int i, offset, count;
+	int partition_number;
+	for (i = 0; i < g_io_partitions_per_rank; i++) {
+		count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset, &g_io_partitions[i].size, &g_io_partitions[i].lp_count, &g_io_partitions[i].event_count, &offset);
+		assert(count == 6 && "Error: could not read correct number of ints during partition_metadata processing\n");
+		assert(partition_number == (self * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
+		data_block += offset;
+	}
+}
+
 void io_load_checkpoint(char * master_filename) {
+	int i;
 	int self, number_of_mpitasks;
 	MPI_Comm_rank(MPI_COMM_WORLD, &self);
 	MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
 
+	FILE * master_header;
 	int partition_md_size;
+	MPI_Request r;
 	
 	if (self == 0) {
 		// Open master header file
-		FILE * master_header = fopen(master_filename, "r");
+		master_header = fopen(master_filename, "r");
 		assert(master_header && "MPI_Task 0 can not open master header to write checkpoint\n");
 
 		// Read first line for global vars
@@ -101,14 +116,24 @@ void io_load_checkpoint(char * master_filename) {
 
 	// Init local partitions
 	g_io_partitions = (io_partition *) calloc(g_io_partitions_per_rank, sizeof(io_partition));
+	char * block = (char *) calloc(g_io_partitions_per_rank, partition_md_size);
 
 	if (self == 0) {
 		// Read and distribute meta-data
-		char * block = (char *) calloc(partition_md_size * g_io_partitions_per_rank);
-		
+		for (i = 0; i < number_of_mpitasks; i++) {
+			fread(block, partition_md_size, g_io_partitions_per_rank, master_header);
+			if (i == self) {
+				process_metadata(block, self);
+			} else {
+				MPI_Isend(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, i, 0, MPI_COMM_WORLD, &r);
+			}
+		}
+
 		// close the file
 		fclose(master_header);
 	} else {
 		// receive meta-data
+		MPI_Irecv(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &r);
+		process_metadata(block, self);
 	}
 }
