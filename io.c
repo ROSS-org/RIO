@@ -101,7 +101,7 @@ void io_load_checkpoint(char * master_filename) {
 	if (self == 0) {
 		// Open master header file
 		master_header = fopen(master_filename, "r");
-		assert(master_header && "MPI_Task 0 can not open master header to write checkpoint\n");
+		assert(master_header && "MPI_Task 0 can not open master header to read checkpoint\n");
 
 		// Read first line for global vars
 		fscanf(master_header, "%d %d %d", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
