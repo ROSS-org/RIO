@@ -6,8 +6,21 @@ This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 ## API
 
+### User Implemented Functions
 
-## Layout Specification
+Each LP-type and event-type must be able to be read and written. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement:
+
+- Read data function
+- Write data function
+
+
+### System Functions
+
+- Load checkpoint from files
+- Save checkpoint to files
+
+
+## File Layout Specification
 
 - Master Header file
 - 1 or more Data files
@@ -34,7 +47,7 @@ Each of the following lines contians the meta-data for one partition:
 
 The data files contain only binary data. 
 There are no per-file or per-partition headers. 
-However, each segment of data (LP or event) has it's own header:
+However, each segment of data (LP or event) has its own header:
 
 - Data type (LP or event type)
 - Size
@@ -47,7 +60,7 @@ The model must provide a data reader and writer for each LP and event type.
 - Data files contain one or more whole parition descriptions
 - Partitions are enumerated linearly
 - LPs are sequentially enumerated within partitions
-- Partitions always represent max granularity
+- Partitions cannot be divided
 - The model is responsible for providing LP and event readers and writers
 - Partitions are linearly combined to form larger blocks (see image)
 - Each MPI Rank has the same number of partitions
