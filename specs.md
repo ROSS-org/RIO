@@ -1,7 +1,8 @@
-
 # ROSS IO Specifications
 
-December 13, 2013
+The purpose of this system is to add checkpointing to [ROSS](http://github.com/carothersc/ROSS). A checkpoint consists of all the LP states and events in the system. These data structures are organized into partitions that can be read by MPI tasks. 
+
+This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 ## Layout Specification
 
