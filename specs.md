@@ -4,6 +4,9 @@ The purpose of this system is to add checkpointing to [ROSS](http://github.com/c
 
 This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
+## API
+
+
 ## Layout Specification
 
 - Master Header file
@@ -52,9 +55,6 @@ The model must provide a data reader and writer for each LP and event type.
 <!---
 ![Linear Partition Combinations](partitions.pdf)
 -->
-
-## API Specification
-
 
 ## Coding Standards
 
