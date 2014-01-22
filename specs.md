@@ -8,16 +8,22 @@ This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 ### User Implemented Functions
 
-Each LP-type and event-type must be able to be read and written. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement:
+Each LP-type and event-type must be able to be serialize and de-serialize its data. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement:
 
-- Read data function
-- Write data function
+- Serialize function
+- De-serialize function
 
 
 ### System Functions
 
 - Load checkpoint from files
+  - block reading of data
+  - de-serializing of data structures
+  - setting ROSS variables (?)
 - Save checkpoint to files
+  - serializing of data structures 
+  - block writing of data
+  - recording ROSS variables (?)
 
 
 ## File Layout Specification
