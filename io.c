@@ -77,28 +77,28 @@ void io_write_master_header(char * master_filename) {
 	fclose(master_header);
 }
 
-void process_metadata(char * data_block, int self) {
+void process_metadata(char * data_block, int mpi_rank) {
 	int i, offset, count;
 	int partition_number;
 	for (i = 0; i < g_io_partitions_per_rank; i++) {
 		count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset, &g_io_partitions[i].size, &g_io_partitions[i].lp_count, &g_io_partitions[i].event_count, &offset);
 		assert(count == 6 && "Error: could not read correct number of ints during partition_metadata processing\n");
-		assert(partition_number == (self * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
+		assert(partition_number == (mpi_rank * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
 		data_block += offset;
 	}
 }
 
 void io_load_checkpoint(char * master_filename) {
 	int i;
-	int self, number_of_mpitasks;
-	MPI_Comm_rank(MPI_COMM_WORLD, &self);
+	int mpi_rank, number_of_mpitasks;
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
 
 	FILE * master_header;
 	int partition_md_size;
 	MPI_Request r;
 	
-	if (self == 0) {
+	if (mpi_rank == 0) {
 		// Open master header file
 		master_header = fopen(master_filename, "r");
 		assert(master_header && "MPI_Task 0 can not open master header to read checkpoint\n");
@@ -118,12 +118,12 @@ void io_load_checkpoint(char * master_filename) {
 	g_io_partitions = (io_partition *) calloc(g_io_partitions_per_rank, sizeof(io_partition));
 	char * block = (char *) calloc(g_io_partitions_per_rank, partition_md_size);
 
-	if (self == 0) {
+	if (mpi_rank == 0) {
 		// Read and distribute meta-data
 		for (i = 0; i < number_of_mpitasks; i++) {
 			fread(block, partition_md_size, g_io_partitions_per_rank, master_header);
-			if (i == self) {
-				process_metadata(block, self);
+			if (i == mpi_rank) {
+				process_metadata(block, mpi_rank);
 			} else {
 				MPI_Isend(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, i, 0, MPI_COMM_WORLD, &r);
 			}
@@ -134,6 +134,6 @@ void io_load_checkpoint(char * master_filename) {
 	} else {
 		// receive meta-data
 		MPI_Irecv(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &r);
-		process_metadata(block, self);
+		process_metadata(block, mpi_rank);
 	}
 }
