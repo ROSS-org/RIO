@@ -137,3 +137,20 @@ void io_load_checkpoint(char * master_filename) {
 		process_metadata(block, mpi_rank);
 	}
 }
+
+void io_store_checkpoint(char * master_filename) {
+	int i;
+	int mpi_rank, number_of_mpitasks;
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
+
+	FILE * master_header;
+	int partition_md_size;
+	MPI_Request r;
+
+	assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
+
+
+
+}
