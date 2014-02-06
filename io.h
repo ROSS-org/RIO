@@ -2,7 +2,7 @@
 //Rensselaer Polytechnic Institute
 //Decemeber 13, 2013
 
-#include <stdio.h>
+#include "ross.h"
 
 extern int g_io_number_of_partitions;
 extern int g_io_number_of_files;
@@ -29,4 +29,5 @@ void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
 
 void io_load_checkpoint(char * master_filename);
+void io_store_checkpoint(char * master_filename);
 
