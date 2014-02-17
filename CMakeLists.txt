@@ -1,1 +1,8 @@
-ADD_LIBRARY(ROSSIO io.h io.c)
+PROJECT(ROSSIO)
+
+SET(rossio_srcs
+  io.h
+  io.c)
+
+ADD_LIBRARY(ROSSIO ${rossio_srcs})
+TARGET_LINK_LIBRARIES(ROSSIO ROSS)
