@@ -16,6 +16,7 @@ io_partition * g_io_partitions;
 int g_io_number_of_files = 0;
 int g_io_number_of_partitions = 0;
 int g_io_partitions_per_rank = 0;
+int g_io_const_lp_size = 0;
 
 // local init flag (space has been allocated)
 int l_init_flag = 0;
@@ -151,6 +152,34 @@ void io_store_checkpoint(char * master_filename) {
 
 	assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
+        // Model must fill in g_io_partition data?
+        printf("MPI Rank %d reports %d lps (starting with gid %d)\n", mpi_rank, g_tw_nlp, g_tw_lp[0]->gid);
+        
+        g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
+        int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
+        
+        // each rank fills in its partition data
+        g_io_partitions[mpi_rank].file = mpi_rank / io_partitions_per_file;
+        if (g_io_const_lp_size != 0) {
+            // g_io_partitions[mpi_rank].offset = ?; // get prev space
+            g_io_partitions[mpi_rank].size = g_tw_nlp * g_io_const_lp_size;
+        } else {
+            // call model defined function
+        }
+        g_io_partitions[mpi_rank].lp_count = g_tw_nlp;
+        g_io_partitions[mpi_rank].event_count = 0; // TODO: non-zero
+        // MPI_Gather on partition data
+        // offset calculation by writers (or just rank 0
+        // writers write
+        // rank 0 writes master_header
 
+        if (mpi_rank == 0) {
+            // write master header
+        }
+        
+        // write data file
+        // first rank in file gathers data and writes?
+        // OR
+        // each rank successively writes to the file
 
 }
