@@ -5,4 +5,7 @@ SET(rossio_srcs
   io.c)
 
 ADD_LIBRARY(ROSSIO ${rossio_srcs})
+
+# find ross.h
+INCLUDE_DIRECTORIES(${ROSS_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(ROSSIO ROSS)
