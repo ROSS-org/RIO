@@ -46,8 +46,8 @@ Each of the following lines contians the meta-data for one partition:
 - Partition file
 - Partition offset (within file)
 - Partition size
-- LP count
-- Event count
+- Data item count
+- data item size (optional)
 
 ### Data Files
 
@@ -56,7 +56,7 @@ There are no per-file or per-partition headers.
 However, each segment of data (LP or event) has its own header:
 
 - Data type (LP or event type)
-- Size
+- Size (if needed)
 
 The model must provide a data reader and writer for each LP and event type.
 
