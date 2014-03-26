@@ -15,8 +15,8 @@ typedef struct {
 	int file;
 	int offset;
 	int size;
-	int lp_count;
-	int event_count;
+	int data_count;
+	int data_size;
 } io_partition;
 
 // length = g_io_number_of_partitions
