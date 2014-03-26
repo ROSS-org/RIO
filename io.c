@@ -150,11 +150,11 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Model must fill in g_io_partition data?
-    printf("MPI Rank %d reports %d lps (starting with gid %d)\n", mpi_rank, g_tw_nlp, g_tw_lp[0]->gid);
+    printf("MPI Rank %d reports %lu lps (starting with gid %lu)\n", mpi_rank, g_tw_nlp, g_tw_lp[0]->gid);
 
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
-    int io_ranks_per_file = number_of_mpi_tasks / g_io_number_of_files;
+    int io_ranks_per_file = number_of_mpitasks / g_io_number_of_files;
 
     // calculate write position
     int file_number = mpi_rank / io_ranks_per_file;
@@ -170,7 +170,7 @@ void io_store_checkpoint(char * master_filename) {
     // open at end of files
     char filename[100];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
-    file = fopen(filename,'a');
+    file = fopen(filename,"a");
     // each rank goes through the LP list
     for (i = 0; i < g_tw_nlp; i++) {
         fwrite(g_tw_lp, sizeof(tw_lp *), g_tw_nlp, file);
