@@ -140,12 +140,10 @@ void io_load_checkpoint(char * master_filename) {
 
 void io_store_checkpoint(char * master_filename) {
     int i;
-    int mpi_rank, number_of_mpitasks;
+    int mpi_rank = g_tw_mynode;
+    int number_of_mpitasks = tw_nnodes();
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
-
-    FILE * master_header;
+    FILE * file;
     int partition_md_size;
     MPI_Request r;
 
@@ -153,22 +151,52 @@ void io_store_checkpoint(char * master_filename) {
 
     // Model must fill in g_io_partition data?
     printf("MPI Rank %d reports %d lps (starting with gid %d)\n", mpi_rank, g_tw_nlp, g_tw_lp[0]->gid);
-        
+
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
-        
+    int io_ranks_per_file = number_of_mpi_tasks / g_io_number_of_files;
+
+    // calculate write position
+    int file_number = mpi_rank / io_ranks_per_file;
+    int write_position = mpi_rank % io_ranks_per_file;
+    int offset = 0;
+    
+    // if not first, wait for prev to write
+    if (write_position != 0) {
+        MPI_Recv(&offset, 1, MPI_INT, mpi_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+    
+    // Write
+    // open at end of files
+    char filename[100];
+    sprintf(filename, "%s.data-%d", master_filename, file_number);
+    file = fopen(filename,'a');
     // each rank goes through the LP list
-        
+    for (i = 0; i < g_tw_nlp; i++) {
+        fwrite(g_tw_lp, sizeof(tw_lp *), g_tw_nlp, file);
+    }
+    // close
+    fclose(file);
+
+    g_io_partitions[mpi_rank].offset = offset;
+    
+    // if not last, send to next writer
+    if (write_position != io_ranks_per_file - 1){
+        offset += g_tw_nlp * sizeof(tw_lp *);
+        MPI_Send(&offset, 1, MPI_INT, mpi_rank+1, 0, MPI_COMM_WORLD);
+    }
 
     // each rank fills in its partition data
-    g_io_partitions[mpi_rank].file = mpi_rank / io_partitions_per_file;
+    g_io_partitions[mpi_rank].file = file_number;
+    g_io_partitions[mpi_rank].data_count = g_tw_nlp;
     if (g_io_partitions[mpi_rank].data_size != 0) {
         // g_io_partitions[mpi_rank].offset = ?; // get prev space
         g_io_partitions[mpi_rank].size = g_tw_nlp * g_io_partitions[mpi_rank].data_size;
     } else {
+        // non-static data size
         // call model defined function
     }
-    g_io_partitions[mpi_rank].data_count = g_tw_nlp;
+
     // MPI_Gather on partition data
     // offset calculation by writers (or just rank 0
     // writers write
