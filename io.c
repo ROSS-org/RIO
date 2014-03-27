@@ -147,10 +147,15 @@ void io_store_checkpoint(char * master_filename) {
     int partition_md_size;
     MPI_Request r;
 
+    // ASSUMPTION: A checkpoint writes LP data (only)
+    // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Model must fill in g_io_partition data?
     printf("MPI Rank %d reports %lu lps (starting with gid %lu)\n", mpi_rank, g_tw_nlp, g_tw_lp[0]->gid);
+
+    // TODO: write more than just lp pointer
+    g_io_partition.data_size = sizeof(tw_lp *);
 
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
@@ -170,13 +175,18 @@ void io_store_checkpoint(char * master_filename) {
     // open at end of files
     char filename[100];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
-    file = fopen(filename,"a");
+    if (write_position == 0) {
+        file = fopen(filename, "w");
+    } else {
+        file = fopen(filename, "a");
+    }
     // each rank goes through the LP list
     for (i = 0; i < g_tw_nlp; i++) {
         fwrite(g_tw_lp, sizeof(tw_lp *), g_tw_nlp, file);
     }
     // close
     fclose(file);
+    printf("Rank %d just wrote to file %d\n", mpi_rank, file_number);
 
     g_io_partition.offset = offset;
     
@@ -192,22 +202,37 @@ void io_store_checkpoint(char * master_filename) {
     if (g_io_partition.data_size != 0) {
         g_io_partition.size = g_io_partition.data_count * g_io_partition.data_size;
     } else {
+        // TODO: 
         // non-static data size
         // call model defined function
     }
 
     // MPI_Gather on partition data
-    // offset calculation by writers (or just rank 0
-    // writers write
-    // rank 0 writes master_header
-
+    io_partition *partitions;
+    if (mpi_rank == 0) {
+        // rank 0 can't gather with g_io_partitions
+        partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition *));
+    }
+    
+    MPI_Datatype MPI_IO_PART;
+    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
+    MPI_Type_commit(&MPI_IO_PART);
+    MPI_Gather(&g_io_partition, 1, MPI_IO_PART, partitions, 1, MPI_IO_PART, 0, MPI_COMM_WORLD);
+    
     if (mpi_rank == 0) {
         // write master header
+        sprintf(filename, "%s.mh", master_filename);
+        file = fopen(filename, "w");
+        fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 10); 
+        for(i = 0; i < number_of_mpitasks; i++){
+            printf("Partition %d:\n", i);
+            printf("\tfile\t%d\n", partitions[i].file);
+            printf("\toffset\t%d\n", partitions[i].offset);
+            printf("\tsize\t%d\n", partitions[i].size);
+            printf("\tdata_count\t%d\n", partitions[i].data_count);
+            printf("\tdata_size\t%d\n", partitions[i].data_size);
+            fprintf(file, "%d %d %d %d %d\n", partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
+        }
+        fclose(file);
     }
-        
-    // write data file
-    // first rank in file gathers data and writes?
-    // OR
-    // each rank successively writes to the file
-
 }
