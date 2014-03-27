@@ -141,9 +141,6 @@ void io_store_checkpoint(char * master_filename) {
     // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
-    // Model must fill in g_io_partition data?
-    printf("MPI Rank %d reports %lu lps (starting with gid %lu)\n", mpi_rank, g_tw_nlp, g_tw_lp[0]->gid);
-
     // TODO: write more than just lp pointer
     g_io_partition.data_size = sizeof(tw_lp *);
 
@@ -176,7 +173,6 @@ void io_store_checkpoint(char * master_filename) {
     }
     // close
     fclose(file);
-    printf("Rank %d just wrote to file %d\n", mpi_rank, file_number);
 
     g_io_partition.offset = offset;
     
@@ -214,12 +210,6 @@ void io_store_checkpoint(char * master_filename) {
         file = fopen(filename, "w");
         fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 10); 
         for(i = 0; i < number_of_mpitasks; i++){
-            printf("Partition %d:\n", i);
-            printf("\tfile\t%d\n", partitions[i].file);
-            printf("\toffset\t%d\n", partitions[i].offset);
-            printf("\tsize\t%d\n", partitions[i].size);
-            printf("\tdata_count\t%d\n", partitions[i].data_count);
-            printf("\tdata_size\t%d\n", partitions[i].data_size);
             fprintf(file, "%d %d %d %d %d\n", partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
         }
         fclose(file);
