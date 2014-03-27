@@ -9,7 +9,6 @@
 #include "io.h"
 
 // Null Initializations
-FILE ** g_io_files;
 io_partition g_io_partition;
 
 // Default Values
@@ -23,20 +22,12 @@ int l_init_flag = 0;
 void io_init(int num_files, int num_partitions) {
     g_io_number_of_files = num_files;
     g_io_number_of_partitions = num_partitions;
-
-    //g_io_files = (FILE **) calloc(g_io_number_of_files, sizeof(FILE*));
-    //g_io_partition = (io_partition) calloc(1, sizeof(io_partition));
-
     l_init_flag = 1;
 }
 
 void io_final() {
     g_io_number_of_files = 0;
     g_io_number_of_partitions = 0;
-        
-    //free(g_io_files);
-    //free(g_io_partition);
-	
     l_init_flag = 0;
 }
 
@@ -145,7 +136,6 @@ void io_store_checkpoint(char * master_filename) {
 
     FILE * file;
     int partition_md_size;
-    MPI_Request r;
 
     // ASSUMPTION: A checkpoint writes LP data (only)
     // TODO: support event data writing
@@ -210,7 +200,6 @@ void io_store_checkpoint(char * master_filename) {
     // MPI_Gather on partition data
     io_partition *partitions;
     if (mpi_rank == 0) {
-        // rank 0 can't gather with g_io_partitions
         partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition *));
     }
     
