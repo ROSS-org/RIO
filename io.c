@@ -22,7 +22,9 @@ int l_init_flag = 0;
 void io_init(int num_files, int num_partitions) {
     g_io_number_of_files = num_files;
     g_io_number_of_partitions = num_partitions;
+    g_io_partitions_per_rank = num_partitions / tw_nnodes();
     l_init_flag = 1;
+    if (g_tw_mynode == 0) printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_per_rank);
 }
 
 void io_final() {
@@ -71,8 +73,11 @@ void io_write_master_header(char * master_filename) {
 void process_metadata(char * data_block, int mpi_rank) {
     int i, offset, count;
     int partition_number;
+
+    printf("Rank %d scanning line \"%s\"\n", g_tw_mynode, data_block);
+
     for (i = 0; i < g_io_partitions_per_rank; i++) {
-        //count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset, &g_io_partitions[i].size, &g_io_partitions[i].data_count, &g_io_partitions[i].data_size, &offset);
+        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partition.file, &g_io_partition.offset, &g_io_partition.size, &g_io_partition.data_count, &g_io_partition.data_size, &offset);
         assert(count == 6 && "Error: could not read correct number of ints during partition_metadata processing\n");
         assert(partition_number == (mpi_rank * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
         data_block += offset;
@@ -81,21 +86,22 @@ void process_metadata(char * data_block, int mpi_rank) {
 
 void io_load_checkpoint(char * master_filename) {
     int i;
-    int mpi_rank, number_of_mpitasks;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &number_of_mpitasks);
+    int mpi_rank = g_tw_mynode;
+    int number_of_mpitasks = tw_nnodes();
 
-    FILE * master_header;
-    int partition_md_size;
+    FILE * file;
+    char filename[100];
     MPI_Request r;
+    int partition_md_size;
 	
     if (mpi_rank == 0) {
         // Open master header file
-        master_header = fopen(master_filename, "r");
-        assert(master_header && "MPI_Task 0 can not open master header to read checkpoint\n");
+        sprintf(filename, "%s.mh", master_filename);
+        file = fopen(filename, "r");
+        assert(file && "MPI_Task 0 can not open master header to read checkpoint\n");
 
         // Read first line for global vars
-        fscanf(master_header, "%d %d %d", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
+        fscanf(file, "%d %d %d\n", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
     }
 
     // Broadcast vars across comm
@@ -106,25 +112,24 @@ void io_load_checkpoint(char * master_filename) {
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
 
     // Init local partitions
-    //g_io_partition = (io_partition *) calloc(g_io_partitions_per_rank, sizeof(io_partition));
     char * block = (char *) calloc(g_io_partitions_per_rank, partition_md_size);
 
     if (mpi_rank == 0) {
         // Read and distribute meta-data
         for (i = 0; i < number_of_mpitasks; i++) {
-            fread(block, partition_md_size, g_io_partitions_per_rank, master_header);
+            fread(block, partition_md_size, g_io_partitions_per_rank, file);
             if (i == mpi_rank) {
                 process_metadata(block, mpi_rank);
             } else {
                 MPI_Isend(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, i, 0, MPI_COMM_WORLD, &r);
             }
         }
-
         // close the file
-        fclose(master_header);
+        fclose(file);
     } else {
         // receive meta-data
         MPI_Irecv(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &r);
+        MPI_Wait(&r, MPI_STATUS_IGNORE);
         process_metadata(block, mpi_rank);
     }
 }
@@ -163,9 +168,9 @@ void io_store_checkpoint(char * master_filename) {
     char filename[100];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
     if (write_position == 0) {
-        file = fopen(filename, "w");
+        file = fopen(filename, "wb");
     } else {
-        file = fopen(filename, "a");
+        file = fopen(filename, "ab");
     }
     // each rank goes through the LP list
     for (i = 0; i < g_tw_nlp; i++) {
@@ -208,9 +213,9 @@ void io_store_checkpoint(char * master_filename) {
         // write master header
         sprintf(filename, "%s.mh", master_filename);
         file = fopen(filename, "w");
-        fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 10); 
+        fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 14); 
         for(i = 0; i < number_of_mpitasks; i++){
-            fprintf(file, "%d %d %d %d %d\n", partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
+            fprintf(file, "%d %d %2d %2d %d %d\n", i, partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
         }
         fclose(file);
     }
