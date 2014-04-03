@@ -8,9 +8,6 @@ extern int g_io_number_of_partitions;
 extern int g_io_number_of_files;
 extern int g_io_partitions_per_rank;
 
-// length = g_io_number_of_files
-extern FILE ** g_io_files;
-
 typedef struct {
 	int file;
 	int offset;
