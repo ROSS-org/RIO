@@ -9,7 +9,7 @@
 #include "io.h"
 
 // Null Initializations
-io_partition g_io_partition;
+io_partition * g_io_partitions;
 
 // Default Values
 int g_io_number_of_files = 0;

@@ -16,7 +16,7 @@ typedef struct {
 	int data_size;
 } io_partition;
 
-// length = g_io_number_of_partitions
+// length = g_io_partitions_per_rank
 extern io_partition * g_io_partitions;
 
 // API Functions
