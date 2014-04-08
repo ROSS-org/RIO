@@ -4,9 +4,9 @@ SET(rossio_srcs io.h)
 
 OPTION(USE_MPI_IO "Use MPI for I/O operations? Defaults to POSIX" OFF)
 IF(USE_MPI_IO)
-	SET(rossio_srcs ${rossio_srcs} io_mpi.c)
+	SET(rossio_srcs ${rossio_srcs} io-mpi.c)
 ELSE(USE_MPI_IO)
-	SET(rossio_srcs ${rossio_srcs} io_posix.c)
+	SET(rossio_srcs ${rossio_srcs} io-posix.c)
 ENDIF(USE_MPI_IO)
 
 ADD_LIBRARY(ROSSIO ${rossio_srcs})
