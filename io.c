@@ -24,7 +24,9 @@ void io_init(int num_files, int num_partitions) {
     g_io_number_of_partitions = num_partitions;
     g_io_partitions_per_rank = num_partitions / tw_nnodes();
     l_init_flag = 1;
-    if (g_tw_mynode == 0) printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_per_rank);
+    if (g_tw_mynode == 0) {
+        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_per_rank);
+    }
 }
 
 void io_final() {
