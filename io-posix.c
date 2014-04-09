@@ -23,6 +23,9 @@ void io_init(int num_files, int num_partitions) {
     g_io_number_of_files = num_files;
     g_io_number_of_partitions = num_partitions;
     g_io_partitions_per_rank = num_partitions / tw_nnodes();
+
+    g_io_partitions = (io_partition *) calloc(g_io_partitions_per_rank, sizeof(io_partition));
+
     l_init_flag = 1;
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_per_rank);
@@ -33,6 +36,9 @@ void io_final() {
     g_io_number_of_files = 0;
     g_io_number_of_partitions = 0;
     g_io_partitions_per_rank = 0;
+
+    free(g_io_partitions);
+
     l_init_flag = 0;
 }
 
@@ -80,7 +86,7 @@ void process_metadata(char * data_block, int mpi_rank) {
     printf("Rank %d scanning line \"%s\"\n", g_tw_mynode, data_block);
 
     for (i = 0; i < g_io_partitions_per_rank; i++) {
-        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partition.file, &g_io_partition.offset, &g_io_partition.size, &g_io_partition.data_count, &g_io_partition.data_size, &offset);
+        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partition[i].file, &g_io_partition[i].offset, &g_io_partition[i].size, &g_io_partition[i].data_count, &g_io_partition[i].data_size, &offset);
         assert(count == 6 && "Error: could not read correct number of ints during partition_metadata processing\n");
         assert(partition_number == (mpi_rank * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
         data_block += offset;
