@@ -32,6 +32,7 @@ void io_init(int num_files, int num_partitions) {
 void io_final() {
     g_io_number_of_files = 0;
     g_io_number_of_partitions = 0;
+    g_io_partitions_per_rank = 0;
     l_init_flag = 0;
 }
 
@@ -151,7 +152,7 @@ void io_store_checkpoint(char * master_filename) {
     // TODO: write more than just lp pointer
     g_io_partition.data_size = sizeof(tw_lp *);
 
-    g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
+    // g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
     int io_ranks_per_file = number_of_mpitasks / g_io_number_of_files;
 
