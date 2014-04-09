@@ -207,7 +207,8 @@ void io_store_checkpoint(char * master_filename) {
     }
     
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
+    int ints_per_partition_md = 5;
+    MPI_Type_contiguous(ints_per_partition_md, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
     MPI_Gather(&g_io_partition, 1, MPI_IO_PART, partitions, 1, MPI_IO_PART, 0, MPI_COMM_WORLD);
     
