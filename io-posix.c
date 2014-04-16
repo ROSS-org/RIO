@@ -83,7 +83,7 @@ void process_metadata(char * data_block, int mpi_rank) {
     int i, offset, count;
     int partition_number;
 
-    printf("Rank %d scanning line \"%s\"\n", g_tw_mynode, data_block);
+    printf("Rank %ld scanning line \"%s\"\n", g_tw_mynode, data_block);
 
     for (i = 0; i < g_io_partitions_per_rank; i++) {
         count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset, &g_io_partitions[i].size, &g_io_partitions[i].data_count, &g_io_partitions[i].data_size, &offset);
