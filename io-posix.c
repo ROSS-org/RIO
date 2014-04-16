@@ -86,7 +86,7 @@ void process_metadata(char * data_block, int mpi_rank) {
     printf("Rank %d scanning line \"%s\"\n", g_tw_mynode, data_block);
 
     for (i = 0; i < g_io_partitions_per_rank; i++) {
-        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partition[i].file, &g_io_partition[i].offset, &g_io_partition[i].size, &g_io_partition[i].data_count, &g_io_partition[i].data_size, &offset);
+        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset, &g_io_partitions[i].size, &g_io_partitions[i].data_count, &g_io_partitions[i].data_size, &offset);
         assert(count == 6 && "Error: could not read correct number of ints during partition_metadata processing\n");
         assert(partition_number == (mpi_rank * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
         data_block += offset;
@@ -156,7 +156,7 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // TODO: write more than just lp pointer
-    g_io_partition.data_size = sizeof(tw_lp *);
+    int static_data_size = sizeof(tw_lp *);
 
     // g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
@@ -181,30 +181,27 @@ void io_store_checkpoint(char * master_filename) {
     } else {
         file = fopen(filename, "ab");
     }
-    // each rank goes through the LP list
-    for (i = 0; i < g_tw_nlp; i++) {
-        fwrite(g_tw_lp, sizeof(tw_lp *), g_tw_nlp, file);
+
+    //ASSUMPTION: each partition's metadata data_count is already set
+    // each rank goes through its partitions
+    int lp_offset = 0;
+    for (i = 0; i < g_io_partitions_per_rank; i++) {
+        // write
+        fwrite(g_tw_lp + lp_offset, static_data_size, g_io_partitions[i].data_count, file);
+        // fill-in metadata
+        g_io_partitions[i].file = file_number;
+        g_io_partitions[i].data_size = static_data_size;
+        g_io_partitions[i].offset = offset;
+        g_io_partitions[i].size = g_io_partitions[i].data_count * g_io_partitions[i].data_size;
+        offset += g_io_partitions[i].size;
+        lp_offset += g_io_partitions[i].data_count;
     }
     // close
     fclose(file);
-
-    g_io_partition.offset = offset;
     
     // if not last, send to next writer
     if (write_position != io_ranks_per_file - 1){
-        offset += g_tw_nlp * sizeof(tw_lp *);
         MPI_Send(&offset, 1, MPI_INT, mpi_rank+1, 0, MPI_COMM_WORLD);
-    }
-
-    // each rank fills in its partition data
-    g_io_partition.file = file_number;
-    g_io_partition.data_count = g_tw_nlp;
-    if (g_io_partition.data_size != 0) {
-        g_io_partition.size = g_io_partition.data_count * g_io_partition.data_size;
-    } else {
-        // TODO: 
-        // non-static data size
-        // call model defined function
     }
 
     // MPI_Gather on partition data
@@ -217,7 +214,7 @@ void io_store_checkpoint(char * master_filename) {
     int ints_per_partition_md = 5;
     MPI_Type_contiguous(ints_per_partition_md, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
-    MPI_Gather(&g_io_partition, 1, MPI_IO_PART, partitions, 1, MPI_IO_PART, 0, MPI_COMM_WORLD);
+    MPI_Gather(&g_io_partitions, g_io_partitions_per_rank, MPI_IO_PART, partitions, g_io_partitions_per_rank, MPI_IO_PART, 0, MPI_COMM_WORLD);
     
     if (mpi_rank == 0) {
         // write master header
