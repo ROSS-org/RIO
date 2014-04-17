@@ -214,7 +214,7 @@ void io_store_checkpoint(char * master_filename) {
     int ints_per_partition_md = 5;
     MPI_Type_contiguous(ints_per_partition_md, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
-    MPI_Gather(&g_io_partitions, g_io_partitions_per_rank, MPI_IO_PART, partitions, g_io_partitions_per_rank, MPI_IO_PART, 0, MPI_COMM_WORLD);
+    MPI_Gather(g_io_partitions, g_io_partitions_per_rank, MPI_IO_PART, partitions, g_io_partitions_per_rank, MPI_IO_PART, 0, MPI_COMM_WORLD);
     
     if (mpi_rank == 0) {
         // write master header
