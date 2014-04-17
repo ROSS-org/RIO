@@ -207,7 +207,7 @@ void io_store_checkpoint(char * master_filename) {
     // MPI_Gather on partition data
     io_partition *partitions;
     if (mpi_rank == 0) {
-        partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition *));
+        partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition));
     }
     
     MPI_Datatype MPI_IO_PART;
@@ -221,7 +221,7 @@ void io_store_checkpoint(char * master_filename) {
         sprintf(filename, "%s.mh", master_filename);
         file = fopen(filename, "w");
         fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 14); 
-        for(i = 0; i < number_of_mpitasks; i++){
+        for(i = 0; i < g_io_number_of_partitions; i++){
             fprintf(file, "%d %d %2d %2d %d %d\n", i, partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
         }
         fclose(file);
