@@ -186,6 +186,8 @@ void io_store_checkpoint(char * master_filename) {
     // each rank goes through its partitions
     int lp_offset = 0;
     for (i = 0; i < g_io_partitions_per_rank; i++) {
+        //HACK
+        g_io_partitions[i].data_count = g_tw_nlp;
         // write
         fwrite(g_tw_lp + lp_offset, static_data_size, g_io_partitions[i].data_count, file);
         // fill-in metadata
