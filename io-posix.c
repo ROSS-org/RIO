@@ -141,6 +141,8 @@ void io_load_checkpoint(char * master_filename) {
         MPI_Wait(&r, MPI_STATUS_IGNORE);
         process_metadata(block, mpi_rank);
     }
+
+    //Start setting up LPs
 }
 
 void io_store_checkpoint(char * master_filename) {
@@ -156,7 +158,7 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // TODO: write more than just lp pointer
-    int static_data_size = sizeof(tw_lp *);
+    int static_data_size = sizeof(tw_lp);
 
     // g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
@@ -189,7 +191,7 @@ void io_store_checkpoint(char * master_filename) {
         //HACK
         g_io_partitions[i].data_count = g_tw_nlp;
         // write
-        fwrite(g_tw_lp + lp_offset, static_data_size, g_io_partitions[i].data_count, file);
+        fwrite(*(g_tw_lp + lp_offset), static_data_size, g_io_partitions[i].data_count, file);
         // fill-in metadata
         g_io_partitions[i].file = file_number;
         g_io_partitions[i].data_size = static_data_size;
