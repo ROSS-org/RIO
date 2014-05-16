@@ -16,6 +16,16 @@ typedef struct {
 	int data_size;
 } io_partition;
 
+typedef struct {
+	tw_lpid gid;
+	int32_t rng[12];
+#ifdef RAND_NORMAL
+	double tw_normal_u1;
+	double tw_normal_u2;
+	int tw_normal_flipflop;
+#endif
+} io_lp_store;
+
 // length = g_io_partitions_per_rank
 extern io_partition * g_io_partitions;
 
@@ -28,3 +38,6 @@ void io_write_master_header(char * master_filename);
 void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
+void io_mpi_datatype_lp (MPI_Datatype *datatype);
+void io_serialize_lp (tw_lp *lp, io_lp_store *store);
+void io_deserialize_lp (io_lp_store *store, tw_lp *lp);
