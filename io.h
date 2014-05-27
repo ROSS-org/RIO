@@ -26,6 +26,15 @@ typedef struct {
 #endif
 } io_lp_store;
 
+// function typedefs
+typedef void (*datatype_function)(MPI_Datatype *dt);
+typedef void (*serialize_function)(tw_lp *lp, void *store);
+typedef void (*deserialize_function)(void *store, tw_lp *lp);
+extern datatype_function model_datatype;
+extern serialize_function model_serialize;
+extern deserialize_function model_deserialize;
+extern size_t model_size;
+
 // length = g_io_partitions_per_rank
 extern io_partition * g_io_partitions;
 
@@ -41,3 +50,4 @@ void io_store_checkpoint(char * master_filename);
 void io_mpi_datatype_lp (MPI_Datatype *datatype);
 void io_serialize_lp (tw_lp *lp, io_lp_store *store);
 void io_deserialize_lp (io_lp_store *store, tw_lp *lp);
+void io_setup (datatype_function , serialize_function , deserialize_function , size_t);
