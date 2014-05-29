@@ -10,6 +10,10 @@
 
 // Null Initializations
 io_partition * g_io_partitions;
+datatype_function model_datatype;
+serialize_function model_serialize;
+deserialize_function model_deserialize;
+size_t model_size;
 
 // Default Values
 int g_io_number_of_files = 0;
@@ -27,6 +31,13 @@ void io_init(int num_files, int num_partitions) {
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_per_rank);
     }
+}
+
+void io_setup(datatype_function model_dt, serialize_function model_s, deserialize_function model_ds, size_t store_size) {
+    model_datatype = model_dt;
+    model_serialize = model_s;
+    model_deserialize = model_ds;
+    model_size = store_size;
 }
 
 void io_final() {
@@ -76,10 +87,10 @@ void process_metadata(char * data_block, int mpi_rank) {
     int i, offset, count;
     int partition_number;
 
-    printf("Rank %d scanning line \"%s\"\n", g_tw_mynode, data_block);
+    printf("Rank %ld scanning line \"%s\"\n", g_tw_mynode, data_block);
 
     for (i = 0; i < g_io_partitions_per_rank; i++) {
-        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partition.file, &g_io_partition.offset, &g_io_partition.size, &g_io_partition.data_count, &g_io_partition.data_size, &offset);
+        count = sscanf(data_block, "%d %d %d %d %d %d%n", &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset, &g_io_partitions[i].size, &g_io_partitions[i].data_count, &g_io_partitions[i].data_size, &offset);
         assert(count == 6 && "Error: could not read correct number of ints during partition_metadata processing\n");
         assert(partition_number == (mpi_rank * g_io_partitions_per_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
         data_block += offset;
@@ -148,8 +159,38 @@ void io_store_checkpoint(char * master_filename) {
     // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
-    // TODO: write more than just lp pointer
-    g_io_partition.data_size = sizeof(tw_lp *);
+    // Gather LP data
+    typedef struct {
+        io_lp_store lp;
+        unsigned char model[model_size];
+    } storage;
+
+    storage buffer[g_tw_nlp];
+    for (i = 0; i < g_tw_nlp; i++) {
+        io_serialize_lp(g_tw_lp[i], &buffer[i].lp);
+        model_serialize(g_tw_lp[i]->cur_state, &buffer[i].model);
+    }
+
+    // Create joint datatype
+    MPI_Datatype LP, MODEL, LP_STATE;
+    MPI_Datatype oldtypes[2];
+    int blockcounts[2];
+    MPI_Aint offsets[2], extent;
+
+    io_mpi_datatype_lp(&LP);
+    model_datatype(&MODEL);
+
+    offsets[0] = 0;
+    oldtypes[0] = LP;
+    blockcounts[0] = 1;
+
+    MPI_Type_extent(oldtypes[0], &extent);
+    offsets[1] = blockcounts[0] * extent;
+    oldtypes[1] = MODEL;
+    blockcounts[1] = 1;
+
+    MPI_Type_struct(2, blockcounts, offsets, oldtypes, &LP_STATE);
+    MPI_Type_commit(&LP_STATE);
 
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
@@ -181,14 +222,14 @@ void io_store_checkpoint(char * master_filename) {
     // close
     //fclose(file);
 
-    g_io_partition.offset = offset;
+    //g_io_partition.offset = offset;
     
     // if not last, send to next writer
     if (write_position != io_ranks_per_file - 1){
         offset += g_tw_nlp * sizeof(tw_lp *);
         MPI_Send(&offset, 1, MPI_INT, mpi_rank+1, 0, MPI_COMM_WORLD);
     }
-
+    /*
     // each rank fills in its partition data
     g_io_partition.file = file_number;
     g_io_partition.data_count = g_tw_nlp;
@@ -199,7 +240,7 @@ void io_store_checkpoint(char * master_filename) {
         // non-static data size
         // call model defined function
     }
-
+    */
     // MPI_Gather on partition data
     io_partition *partitions;
     if (mpi_rank == 0) {
@@ -209,7 +250,7 @@ void io_store_checkpoint(char * master_filename) {
     MPI_Datatype MPI_IO_PART;
     MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
-    MPI_Gather(&g_io_partition, 1, MPI_IO_PART, partitions, 1, MPI_IO_PART, 0, MPI_COMM_WORLD);
+    MPI_Gather(&g_io_partitions, 1, MPI_IO_PART, partitions, 1, MPI_IO_PART, 0, MPI_COMM_WORLD);
     
     if (mpi_rank == 0) {
         // write master header
