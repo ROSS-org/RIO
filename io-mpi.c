@@ -160,15 +160,11 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Gather LP data
-    typedef struct {
-        io_lp_store lp;
-        unsigned char model[model_size];
-    } storage;
-
-    storage buffer[g_tw_nlp];
+    int lp_size = sizeof(io_lp_store) + model_size;
+    char buffer[g_tw_nlp * lp_size];
     for (i = 0; i < g_tw_nlp; i++) {
-        io_serialize_lp(g_tw_lp[i], &buffer[i].lp);
-        model_serialize(g_tw_lp[i]->cur_state, &buffer[i].model);
+        io_serialize_lp(g_tw_lp[i], &buffer[i * lp_size]);
+        model_serialize(g_tw_lp[i]->cur_state, &buffer[(i * lp_size) + sizeof(io_lp_store)]);
     }
 
     // Create joint datatype
