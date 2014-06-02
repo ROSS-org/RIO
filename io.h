@@ -48,6 +48,6 @@ void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
 void io_mpi_datatype_lp (MPI_Datatype *datatype);
-void io_serialize_lp (tw_lp *lp, io_lp_store *store);
-void io_deserialize_lp (io_lp_store *store, tw_lp *lp);
+void io_serialize_lp (tw_lp *lp, void *store);
+void io_deserialize_lp (void *store, tw_lp *lp);
 void io_setup (datatype_function , serialize_function , deserialize_function , size_t);
