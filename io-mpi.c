@@ -145,6 +145,20 @@ void io_load_checkpoint(char * master_filename) {
         MPI_Wait(&r, MPI_STATUS_IGNORE);
         process_metadata(block, mpi_rank);
     }
+
+    // This example sort of works.
+    printf("\n** Unserialize of LP data **\n\n");
+    tw_lp test_array[g_tw_nlp];
+    void *buffer, *b; // TODO: fix.
+    int lp_size = sizeof(io_lp_store) + model_size;
+
+    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
+        printf("Reading from buffer at %p\n", b);
+        io_deserialize_lp(b, &(test_array[i]));
+        model_deserialize(b + sizeof(io_lp_store), &(test_array[i].cur_state));
+        printf("Rank %d deserialized LP %lu\n", mpi_rank, test_array[i].gid);
+    }
+    return;
 }
 
 void io_store_checkpoint(char * master_filename) {
@@ -160,11 +174,16 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Gather LP data
+    printf("\n** Serialize of LP data **\n\n");    
     int lp_size = sizeof(io_lp_store) + model_size;
     char buffer[g_tw_nlp * lp_size];
-    for (i = 0; i < g_tw_nlp; i++) {
-        io_serialize_lp(g_tw_lp[i], &buffer[i * lp_size]);
-        model_serialize(g_tw_lp[i]->cur_state, &buffer[(i * lp_size) + sizeof(io_lp_store)]);
+    printf("Buffer is %lu\n", sizeof(buffer));
+    void * b;
+    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
+        printf("Writing to buffer at %p\n", b);
+        io_serialize_lp(g_tw_lp[i], b);
+        model_serialize(g_tw_lp[i]->cur_state, b + sizeof(io_lp_store));
+        printf("Rank %d serialized LP %lu\n", mpi_rank, g_tw_lp[i]->gid);
     }
 
     // Create joint datatype
@@ -305,38 +324,50 @@ void io_mpi_datatype_lp (MPI_Datatype *datatype) {
     MPI_Type_commit(datatype);
 }
 
-void io_serialize_lp (tw_lp *lp, io_lp_store *store) {
+void io_serialize_lp (tw_lp *lp, void *store) {
     int i, j;
 
-    store->gid = lp->gid;
+    io_lp_store tmp;
+
+    tmp.gid = lp->gid;
     for (i = 0; i < g_tw_nRNG_per_lp; i++) {
         for (j = 0; j < 4; j++) {
-            store->rng[j] = lp->rng->Ig[j];
-            store->rng[j+4] = lp->rng->Lg[j];
-            store->rng[j+8] = lp->rng->Cg[j];
+            tmp.rng[j] = lp->rng->Ig[j];
+            tmp.rng[j+4] = lp->rng->Lg[j];
+            tmp.rng[j+8] = lp->rng->Cg[j];
         }
 #ifdef RAND_NORMAL
-        store->tw_normal_u1 = lp->rng->tw_normal_u1;
-        store->tw_normal_u2 = lp->rng->tw_normal_u2;
-        store->tw_normal_flipflop = lp->rng->tw_normal_flipflop;
+        tmp.tw_normal_u1 = lp->rng->tw_normal_u1;
+        tmp.tw_normal_u2 = lp->rng->tw_normal_u2;
+        tmp.tw_normal_flipflop = lp->rng->tw_normal_flipflop;
 #endif
     }
+
+    memcpy(store, &tmp, sizeof(io_lp_store));
 }
 
-void io_deserialize_lp (io_lp_store *store, tw_lp *lp) {
+void io_deserialize_lp (void *store, tw_lp *lp) {
     int i, j;
 
-    lp->gid = store->gid;
+    io_lp_store tmp;
+    memcpy(&tmp, store, sizeof(io_lp_store));
+
+    lp->gid = tmp.gid;
+
+    // TODO: remove this return for further testing
+    // Can't copy to RNG if I haven't allocated it
+    return;
+
     for (i = 0; i < g_tw_nRNG_per_lp; i++) {
         for (j = 0; j < 4; j++) {
-            lp->rng->Ig[j] = store->rng[j];
-            lp->rng->Lg[j] = store->rng[j+4];
-            lp->rng->Cg[j] = store->rng[j+8];
+            lp->rng->Ig[j] = tmp.rng[j];
+            lp->rng->Lg[j] = tmp.rng[j+4];
+            lp->rng->Cg[j] = tmp.rng[j+8];
         }
 #ifdef RAND_NORMAL
-        lp->rng->tw_normal_u1 = store->tw_normal_u1;
-        lp->rng->tw_normal_u2 = store->tw_normal_u2;
-        lp->rng->tw_normal_flipflop = store->tw_normal_flipflop;
+        lp->rng->tw_normal_u1 = tmp.tw_normal_u1;
+        lp->rng->tw_normal_u2 = tmp.tw_normal_u2;
+        lp->rng->tw_normal_flipflop = tmp.tw_normal_flipflop;
 #endif
     }
 }
