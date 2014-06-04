@@ -174,16 +174,12 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Gather LP data
-    printf("\n** Serialize of LP data **\n\n");    
     int lp_size = sizeof(io_lp_store) + model_size;
     char buffer[g_tw_nlp * lp_size];
-    printf("Buffer is %lu\n", sizeof(buffer));
     void * b;
     for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
-        printf("Writing to buffer at %p\n", b);
         io_serialize_lp(g_tw_lp[i], b);
         model_serialize(g_tw_lp[i]->cur_state, b + sizeof(io_lp_store));
-        printf("Rank %d serialized LP %lu\n", mpi_rank, g_tw_lp[i]->gid);
     }
 
     // Create joint datatype
