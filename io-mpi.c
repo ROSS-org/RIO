@@ -106,28 +106,23 @@ void io_load_checkpoint(char * master_filename) {
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
-    FILE * file;
-    char filename[100];
-    MPI_Request r;
-    int partition_md_size;
-	
-    if (mpi_rank == 0) {
-        // Open master header file
-        sprintf(filename, "%s.mh", master_filename);
-        file = fopen(filename, "r");
-        assert(file && "MPI_Task 0 can not open master header to read checkpoint\n");
-
-        // Read first line for global vars
-        fscanf(file, "%d %d %d\n", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
-    }
-
-    // Broadcast vars across comm
-    MPI_Bcast(&g_io_number_of_files, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&g_io_number_of_partitions, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&partition_md_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    // assert that IO system has been init
+    assert(g_io_number_of_files != && g_io_number_of_partitions != 0 && "ERROR: IO variables not set: # of files or # of parts\n");
 
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
 
+    MPI_File * fh;
+    char filename[100];
+    int partition_md_size = 78;
+    MPI_Offset offset = (long long) partition_md_size * mpi_rank * g_io_partitions_per_rank;
+
+    // Read MH
+    sprintf(filename, "%s.mh", master_filename);
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+	MPI_File_seek(fh, offset, MPI_SEEK_SET);
+
+    MPI_File_read();
+    
     // Init local partitions
     char * block = (char *) calloc(g_io_partitions_per_rank, partition_md_size);
 
