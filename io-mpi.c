@@ -257,9 +257,9 @@ void io_store_checkpoint(char * master_filename) {
         // write master header
         sprintf(filename, "%s.mh", master_filename);
         file = fopen(filename, "w");
-        fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 14); 
-        for(i = 0; i < number_of_mpitasks; i++){
-            fprintf(file, "%d %d %2d %2d %d %d\n", i, partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
+        fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 78); 
+        for(i = 0; i < g_io_number_of_partitions; i++){
+            fprintf(file, "%12d %12d %12d %12d %12d %12d\n", i, partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
         }
         fclose(file);
     }
