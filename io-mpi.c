@@ -114,11 +114,11 @@ void io_load_checkpoint(char * master_filename) {
     if (mpi_rank == 0) {
         // Open master header file
         sprintf(filename, "%s.mh", master_filename);
-        //file = fopen(filename, "r");
+        file = fopen(filename, "r");
         assert(file && "MPI_Task 0 can not open master header to read checkpoint\n");
 
         // Read first line for global vars
-        //fscanf(file, "%d %d %d\n", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
+        fscanf(file, "%d %d %d\n", &g_io_number_of_files, &g_io_number_of_partitions, &partition_md_size);
     }
 
     // Broadcast vars across comm
@@ -134,7 +134,7 @@ void io_load_checkpoint(char * master_filename) {
     if (mpi_rank == 0) {
         // Read and distribute meta-data
         for (i = 0; i < number_of_mpitasks; i++) {
-            //fread(block, partition_md_size, g_io_partitions_per_rank, file);
+            fread(block, partition_md_size, g_io_partitions_per_rank, file);
             if (i == mpi_rank) {
                 process_metadata(block, mpi_rank);
             } else {
