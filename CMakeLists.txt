@@ -1,3 +1,6 @@
+## From https://github.com/rpavlik/cmake-modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 PROJECT(ROSSIO)
 
 SET(rossio_srcs io.h)
@@ -8,6 +11,14 @@ IF(USE_MPI_IO)
 ELSE(USE_MPI_IO)
 	SET(rossio_srcs ${rossio_srcs} io-posix.c)
 ENDIF(USE_MPI_IO)
+
+## Print ROSSIO Git Hash
+INCLUDE(GetGitRevisionDescription)
+GET_GIT_HEAD_REVISION(GIT_REFSPEC_IO GIT_SHA1_IO)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/io-config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/io-config.h @ONLY)
+SET(rossio_srcs ${rossio_srcs} io-config.h)
+SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/io-config.h.in PROPERTIES GENERATED FALSE)
+SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/io-config.h PROPERTIES GENERATED TRUE)
 
 ADD_LIBRARY(ROSSIO ${rossio_srcs})
 

@@ -3,6 +3,7 @@
 //Decemeber 13, 2013
 
 #include "ross.h"
+#include "io-config.h"
 
 extern int g_io_number_of_partitions;
 extern int g_io_number_of_files;
