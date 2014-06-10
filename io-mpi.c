@@ -340,10 +340,6 @@ void io_deserialize_lp (void *store, tw_lp *lp) {
 
     lp->gid = tmp.gid;
 
-    // TODO: remove this return for further testing
-    // Can't copy to RNG if I haven't allocated it
-    return;
-
     for (i = 0; i < g_tw_nRNG_per_lp; i++) {
         for (j = 0; j < 4; j++) {
             lp->rng->Ig[j] = tmp.rng[j];
