@@ -236,28 +236,23 @@ void io_store_checkpoint(char * master_filename) {
         my_partitions[i].size = my_partitions[i].data_count * my_partitions[i].data_size;
     }
 
-    // MPI_Gather on partition data
-    io_partition *partitions;
-    if (mpi_rank == 0) {
-        partitions = (io_partition *) calloc(g_io_number_of_partitions, sizeof(io_partition *));
-    }
-    
     MPI_Datatype MPI_IO_PART;
     MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
-    MPI_Gather(&my_partitions, g_io_partitions_per_rank, MPI_IO_PART, partitions, g_io_partitions_per_rank, MPI_IO_PART, 0, MPI_COMM_WORLD);
     
-    if (mpi_rank == 0) {
-        FILE *file;
-        // write master header
-        sprintf(filename, "%s.mh", master_filename);
-        file = fopen(filename, "w");
-//        fprintf(file, "%d %d %d\n", g_io_number_of_files, g_io_number_of_partitions, 78); 
-        for(i = 0; i < g_io_number_of_partitions; i++){
-            fprintf(file, "%12d %12d %12d %12d %12d %12d\n", i, partitions[i].file, partitions[i].offset, partitions[i].size, partitions[i].data_count, partitions[i].data_size);
-        }
-        fclose(file);
-    }
+    // TWO OPTIONS HERE
+    // 1. gather all to rank 0 and write ascii via posix
+    // 2. a single write operation across MPI_COMM_WORLD to all write binary data
+    // ==> implementing two now (1 in previous commit)
+
+    offset = (long long) sizeof(io_partition) * g_io_partitions_per_rank * mpi_rank;
+    sprintf(filename, "%s.mh", master_filename);
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    MPI_File_seek(fh, offset, MPI_SEEK_SET);
+
+    MPI_File_write(fh, &my_partitions, g_io_partitions_per_rank, MPI_IO_PART, &status);
+
+    MPI_File_close(&fh);
 
     // WRITE READ ME
     if (mpi_rank == 0) {
