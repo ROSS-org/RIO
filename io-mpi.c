@@ -111,40 +111,29 @@ void io_load_checkpoint(char * master_filename) {
 
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
 
-    MPI_File * fh;
+    MPI_File fh;
+    MPI_Status status;
     char filename[100];
     int partition_md_size = 78;
     MPI_Offset offset = (long long) partition_md_size * mpi_rank * g_io_partitions_per_rank;
 
     // Read MH
+
+    // Metadata datatype
+    MPI_Datatype MPI_IO_PART;
+    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
+    MPI_Type_commit(&MPI_IO_PART);
+
+    io_partition my_partitions[g_io_partitions_per_rank];
+
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	MPI_File_seek(fh, offset, MPI_SEEK_SET);
 
-    MPI_File_read();
+    MPI_File_read(fh, &my_partitions, g_io_partitions_per_rank, MPI_IO_PART, &status);
+
+    MPI_File_close(&fh);
     
-    // Init local partitions
-    char * block = (char *) calloc(g_io_partitions_per_rank, partition_md_size);
-
-    if (mpi_rank == 0) {
-        // Read and distribute meta-data
-        for (i = 0; i < number_of_mpitasks; i++) {
-            fread(block, partition_md_size, g_io_partitions_per_rank, file);
-            if (i == mpi_rank) {
-                process_metadata(block, mpi_rank);
-            } else {
-                MPI_Isend(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, i, 0, MPI_COMM_WORLD, &r);
-            }
-        }
-        // close the file
-        //fclose(file);
-    } else {
-        // receive meta-data
-        MPI_Irecv(block, partition_md_size * g_io_partitions_per_rank, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &r);
-        MPI_Wait(&r, MPI_STATUS_IGNORE);
-        process_metadata(block, mpi_rank);
-    }
-
     // This example sort of works.
     printf("\n** Unserialize of LP data **\n\n");
     tw_lp test_array[g_tw_nlp];
