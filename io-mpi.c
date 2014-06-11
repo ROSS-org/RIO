@@ -107,7 +107,7 @@ void io_load_checkpoint(char * master_filename) {
     int number_of_mpitasks = tw_nnodes();
 
     // assert that IO system has been init
-    assert(g_io_number_of_files != && g_io_number_of_partitions != 0 && "ERROR: IO variables not set: # of files or # of parts\n");
+    assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "ERROR: IO variables not set: # of files or # of parts\n");
 
     g_io_partitions_per_rank = g_io_number_of_partitions / number_of_mpitasks;
 
