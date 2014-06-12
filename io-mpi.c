@@ -266,6 +266,8 @@ void io_store_checkpoint(char * master_filename) {
 #endif
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
         fprintf(file, "Model Size:\t%d\n", model_size);
+        fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
+        fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
     }
 }
 
