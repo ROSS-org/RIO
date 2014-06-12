@@ -133,6 +133,10 @@ void io_load_checkpoint(char * master_filename) {
     MPI_File_read(fh, &my_partitions, g_io_partitions_per_rank, MPI_IO_PART, &status);
 
     MPI_File_close(&fh);
+
+    for (i = 0; i < g_io_partitions_per_rank; i++) {
+        printf("Rank %d read metadata for part in file %d\n", mpi_rank, my_partitions[i].file);
+    }
     
     // This example sort of works.
     printf("\n** Unserialize of LP data **\n\n");
@@ -164,7 +168,7 @@ void io_store_checkpoint(char * master_filename) {
     void * b;
     for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
         io_serialize_lp(g_tw_lp[i], b);
-        model_serialize(g_tw_lp[i]->cur_state, b + sizeof(io_lp_store));
+        model_serialize(g_tw_lp[i], b + sizeof(io_lp_store));
     }
 
     // Create joint datatype
