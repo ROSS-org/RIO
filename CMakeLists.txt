@@ -1,6 +1,3 @@
-## From https://github.com/rpavlik/cmake-modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 PROJECT(ROSSIO)
 
 SET(rossio_srcs io.h)
