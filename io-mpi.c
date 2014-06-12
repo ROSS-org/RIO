@@ -138,17 +138,50 @@ void io_load_checkpoint(char * master_filename) {
         printf("Rank %d read metadata for part in file %d\n", mpi_rank, my_partitions[i].file);
     }
     
-    // This example sort of works.
-    printf("\n** Unserialize of LP data **\n\n");
-    tw_lp test_array[g_tw_nlp];
-    void *buffer, *b; // TODO: fix.
-    int lp_size = sizeof(io_lp_store) + model_size;
+    // Now data files
+    // ASSUMPTION: one partition per rank!!
+    int p = 0;
 
-    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
-        printf("Reading from buffer at %p\n", b);
-        io_deserialize_lp(b, &(test_array[i]));
-        model_deserialize(b + sizeof(io_lp_store), &(test_array[i].cur_state));
-        printf("Rank %d deserialized LP %lu\n", mpi_rank, test_array[i].gid);
+    // Set up datatypes
+    MPI_Datatype LP, MODEL, LP_STATE;
+    MPI_Datatype oldtypes[2];
+    int blockcounts[2];
+    MPI_Aint offsets[2], extent;
+
+    io_mpi_datatype_lp(&LP);
+    model_datatype(&MODEL);
+
+    offsets[0] = 0;
+    oldtypes[0] = LP;
+    blockcounts[0] = 1;
+
+    MPI_Type_extent(oldtypes[0], &extent);
+    offsets[1] = blockcounts[0] * extent;
+    oldtypes[1] = MODEL;
+    blockcounts[1] = 1;
+
+    MPI_Type_struct(2, blockcounts, offsets, oldtypes, &LP_STATE);
+    MPI_Type_commit(&LP_STATE);
+
+    // Read file
+    MPI_Comm file_comm;
+    char buffer[my_partitions[p].size];
+    offset = (long long) my_partitions[p].offset;
+    sprintf(filename, "%s.data-%d", master_filename, my_partitions[p].file);
+
+    MPI_Comm_split(MPI_COMM_WORLD, my_partitions[p].file, mpi_rank, &file_comm);
+    MPI_File_open(file_comm, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    MPI_File_seek(fh, offset, MPI_SEEK_SET);
+
+    MPI_File_read(fh, &buffer, my_partitions[p].data_count, LP_STATE, &status);
+
+    MPI_File_close(&fh);
+
+    // Load Data
+    void * b;
+    for (i = 0, b = buffer; i < my_partitions[p].data_count; i++, b += my_partitions[p].data_size) {
+        io_deserialize_lp(b, g_tw_lp[i]);
+        model_deserialize(b + sizeof(io_lp_store), g_tw_lp[i]);
     }
     return;
 }
