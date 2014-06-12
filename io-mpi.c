@@ -268,6 +268,11 @@ void io_store_checkpoint(char * master_filename) {
         fprintf(file, "Model Size:\t%d\n", model_size);
         fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
         fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
+#ifdef RAND_NORMAL
+        fprintf(file, "RAND_NORMAL is ON\n");
+#else
+        fprintf(file, "RAND_NORMAL is OFF\n");
+#endif
     }
 }
 
