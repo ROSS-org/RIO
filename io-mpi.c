@@ -256,6 +256,7 @@ void io_store_checkpoint(char * master_filename) {
     // each rank fills in its local partition data
     io_partition my_partitions[g_io_partitions_per_rank];
     for (int i = 0; i < g_io_partitions_per_rank; ++i) {
+        my_partitions[i].part = (mpi_rank * g_io_partitions_per_rank) + i;
         my_partitions[i].file = file_number;
         my_partitions[i].data_count = g_tw_nlp / g_io_partitions_per_rank;
         my_partitions[i].data_size = lp_size;
@@ -263,7 +264,7 @@ void io_store_checkpoint(char * master_filename) {
     }
 
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
+    MPI_Type_contiguous(6, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
     
     // TWO OPTIONS HERE

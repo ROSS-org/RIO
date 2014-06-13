@@ -10,6 +10,7 @@ extern int g_io_number_of_files;
 extern int g_io_partitions_per_rank;
 
 typedef struct {
+	int part;
 	int file;
 	int offset;
 	int size;
