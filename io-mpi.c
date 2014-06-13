@@ -218,12 +218,15 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Gather LP data
-    int lp_size = sizeof(io_lp_store) + model_size;
-    char buffer[g_tw_nlp * lp_size];
+    int lp_size;
+    MPI_Type_size(LP_STATE, &lp_size);
+    lp_size = sizeof(io_lp_store); // these are not always the same!
+    int total_size = lp_size + model_size;
+    char buffer[g_tw_nlp * total_size];
     void * b;
-    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
+    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += total_size) {
         io_serialize_lp(g_tw_lp[i], b);
-        model_serialize(g_tw_lp[i], b + sizeof(io_lp_store));
+        model_serialize(g_tw_lp[i], b + lp_size);
     }
 
     // ASSUMPTION: static LP model size
@@ -239,7 +242,7 @@ void io_store_checkpoint(char * master_filename) {
 
     int file_number = mpi_rank / io_ranks_per_file;
     int file_position = mpi_rank % io_ranks_per_file;
-    MPI_Offset offset = (long long) lp_size * g_tw_nlp * file_position;
+    MPI_Offset offset = (long long) total_size * g_tw_nlp * file_position;
     // assume const g_tw_nlp
 
     MPI_Comm_split(MPI_COMM_WORLD, file_number, file_position, &file_comm);
@@ -260,8 +263,9 @@ void io_store_checkpoint(char * master_filename) {
         my_partitions[i].part = (mpi_rank * g_io_partitions_per_rank) + i;
         my_partitions[i].file = file_number;
         my_partitions[i].data_count = g_tw_nlp / g_io_partitions_per_rank;
-        my_partitions[i].data_size = lp_size;
+        my_partitions[i].data_size = total_size;
         my_partitions[i].size = my_partitions[i].data_count * my_partitions[i].data_size;
+        my_partitions[i].offset = offset;
     }
 
     MPI_Datatype MPI_IO_PART;
