@@ -191,19 +191,6 @@ void io_store_checkpoint(char * master_filename) {
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
-    // ASSUMPTION: A checkpoint writes LP data (only)
-    // TODO: support event data writing
-    assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
-
-    // Gather LP data
-    int lp_size = sizeof(io_lp_store) + model_size;
-    char buffer[g_tw_nlp * lp_size];
-    void * b;
-    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
-        io_serialize_lp(g_tw_lp[i], b);
-        model_serialize(g_tw_lp[i], b + sizeof(io_lp_store));
-    }
-
     // Create joint datatype
     MPI_Datatype LP, MODEL, LP_STATE;
     MPI_Datatype oldtypes[2];
@@ -224,6 +211,19 @@ void io_store_checkpoint(char * master_filename) {
 
     MPI_Type_struct(2, blockcounts, offsets, oldtypes, &LP_STATE);
     MPI_Type_commit(&LP_STATE);
+
+    // ASSUMPTION: A checkpoint writes LP data (only)
+    // TODO: support event data writing
+    assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
+
+    // Gather LP data
+    int lp_size = sizeof(io_lp_store) + model_size;
+    char buffer[g_tw_nlp * lp_size];
+    void * b;
+    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += lp_size) {
+        io_serialize_lp(g_tw_lp[i], b);
+        model_serialize(g_tw_lp[i], b + sizeof(io_lp_store));
+    }
 
     // ASSUMPTION: static LP model size
 
