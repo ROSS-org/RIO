@@ -114,15 +114,16 @@ void io_load_checkpoint(char * master_filename) {
     MPI_File fh;
     MPI_Status status;
     char filename[100];
-    int partition_md_size = 78;
-    MPI_Offset offset = (long long) partition_md_size * mpi_rank * g_io_partitions_per_rank;
 
     // Read MH
 
     // Metadata datatype
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
+    MPI_Type_contiguous(6, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
+    int partition_md_size;
+    MPI_Type_size(MPI_IO_PART, &partition_md_size);
+    MPI_Offset offset = (long long) partition_md_size * mpi_rank * g_io_partitions_per_rank;
 
     io_partition my_partitions[g_io_partitions_per_rank];
 
@@ -135,7 +136,7 @@ void io_load_checkpoint(char * master_filename) {
     MPI_File_close(&fh);
 
     for (i = 0; i < g_io_partitions_per_rank; i++) {
-        printf("Rank %d read metadata for part in file %d\n", mpi_rank, my_partitions[i].file);
+        printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tcount %d\n\tdsize %d\n\n", mpi_rank, my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset, my_partitions[i].size, my_partitions[i].data_count, my_partitions[i].data_size);
     }
     
     // Now data files
@@ -271,6 +272,13 @@ void io_store_checkpoint(char * master_filename) {
     // 1. gather all to rank 0 and write ascii via posix
     // 2. a single write operation across MPI_COMM_WORLD to all write binary data
     // ==> implementing two now (1 in previous commit)
+
+    for (i = 0; i < g_io_partitions_per_rank; i++) {
+        printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tcount %d\n\tdsize %d\n\n", mpi_rank, my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset, my_partitions[i].size, my_partitions[i].data_count, my_partitions[i].data_size);
+    }
+    int psize;
+    MPI_Type_size(MPI_IO_PART, &psize);
+    printf("Metadata size: %d or %d\n", psize, sizeof(io_partition));
 
     offset = (long long) sizeof(io_partition) * g_io_partitions_per_rank * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
