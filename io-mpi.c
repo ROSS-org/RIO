@@ -140,8 +140,11 @@ void io_load_checkpoint(char * master_filename) {
     }
     
     // Now data files
-    // ASSUMPTION: one partition per rank!!
-    int p = 0;
+    // ASSUME UNIFORM DATA SIZE
+    for (i = 1; i < g_io_partitions_per_rank; i++) {
+        assert(my_partitions[i].file == my_partitions[0].file && "ERROR: Some rank has partitions spread across files\n");
+        assert(my_partitions[i].data_size == my_partitions[0].data_size && "ASSUMPTION: all data size is the same\n");
+    }
 
     // Set up datatypes
     MPI_Datatype LP, MODEL, LP_STATE;
@@ -166,21 +169,33 @@ void io_load_checkpoint(char * master_filename) {
 
     // Read file
     MPI_Comm file_comm;
-    char buffer[my_partitions[p].size];
-    offset = (long long) my_partitions[p].offset;
-    sprintf(filename, "%s.data-%d", master_filename, my_partitions[p].file);
+    int file_number = my_partitions[0].file;
+    int lp_size = my_partitions[0].data_size;
+    int partitions_size = 0;
+    int partitions_count = 0;
+    for (i = 0; i < g_io_partitions_per_rank; i++) {
+        partitions_size += my_partitions[i].size;
+        partitions_count += my_partitions[i].data_count;
+    }
+    char buffer[partitions_size];
+    void * b = buffer;
+    sprintf(filename, "%s.data-%d", master_filename, file_number);
 
-    MPI_Comm_split(MPI_COMM_WORLD, my_partitions[p].file, mpi_rank, &file_comm);
+    MPI_Comm_split(MPI_COMM_WORLD, file_number, mpi_rank, &file_comm);
     MPI_File_open(file_comm, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-    MPI_File_seek(fh, offset, MPI_SEEK_SET);
 
-    MPI_File_read(fh, &buffer, my_partitions[p].data_count, LP_STATE, &status);
+    // FOR SOME REASON WE CAN'T DO A SINGLE READ OF MULTIPLE PARTITIONS
+    for (i = 0; i < g_io_partitions_per_rank; i++){
+        offset = (long long) my_partitions[i].offset;
+        MPI_File_seek(fh, offset, MPI_SEEK_SET);
+        MPI_File_read(fh, b, my_partitions[i].data_count, LP_STATE, &status);
+        b += my_partitions[i].size;
+    }
 
     MPI_File_close(&fh);
 
     // Load Data
-    void * b;
-    for (i = 0, b = buffer; i < my_partitions[p].data_count; i++, b += my_partitions[p].data_size) {
+    for (i = 0, b = buffer; i < partitions_count; i++, b += lp_size) {
         io_deserialize_lp(b, g_tw_lp[i]);
         model_deserialize(b + sizeof(io_lp_store), g_tw_lp[i]);
     }
