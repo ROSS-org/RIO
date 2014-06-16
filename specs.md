@@ -12,6 +12,7 @@ Each LP-type and event-type must be able to be serialize and de-serialize its da
 
 - Serialize function
 - De-serialize function
+- MPI Datatype function
 
 
 ### System Functions
@@ -28,37 +29,41 @@ Each LP-type and event-type must be able to be serialize and de-serialize its da
 
 ## File Layout Specification
 
+- Read Me file
 - Master Header file
 - 1 or more Data files
+
+### Read Me File
+
+This is a human readable file that will not be parsed by the ROSSIO system.
+This file contains information about the checkpoint files, including:
+
+- How many files are in the checkpoint
+- The name of the checkpoint
+- The version of ROSS and ROSSIO (in git hashes)
+- Date the files were written
+- Other details about the ROSS config and model
+
 
 ### Master Header File
 
 The master header contains all of the meta-data for the partitions. 
-This file is human readable, but is explicitly defined and contains only numbers.
+This file is not human readable (binary data).
 
-The first line contains:
-- Total Number of Files
-- Total Number of Partitions
-- Size of meta-data for a single partition (for block reading)
-
-Each of the following lines contians the meta-data for one partition:
+Each block of metadata contians the following information on a partition:
 - Partition number
 - Partition file
 - Partition offset (within file)
 - Partition size
 - Data item count
-- data item size (optional)
+- Data item size (static value is optional)
 
 ### Data Files
 
 The data files contain only binary data. 
 There are no per-file or per-partition headers. 
-However, each segment of data (LP or event) has its own header:
 
-- Data type (LP or event type)
-- Size (if needed)
-
-The model must provide a data reader and writer for each LP and event type.
+The model must provide a data serializer and deserializer for each LP and event type.
 
 ## Design Decisions and Assumptions
 
