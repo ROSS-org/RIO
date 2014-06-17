@@ -23,6 +23,18 @@ int g_io_partitions_per_rank = 0;
 // local init flag (space has been allocated)
 int l_init_flag = 0;
 
+// Command Line Options
+const tw_optdef io_opt[] = {
+    TWOPT_GROUP("ROSSIO"),
+    TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
+    TWOPT_UINT("io-parts", g_io_number_of_partitions, "io partitions"),
+    TWOPT_END()
+};
+
+void io_opts () {
+    tw_opt_add(io_opt);
+}
+
 void io_init(int num_files, int num_partitions) {
     if (num_partitions == 0) {
         num_partitions = tw_nnodes();

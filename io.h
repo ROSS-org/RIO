@@ -41,6 +41,7 @@ extern size_t model_size;
 extern io_partition * g_io_partitions;
 
 // API Functions
+void io_opts();
 void io_init(int num_files, int num_partitions);
 void io_final();
 void io_read_master_header(char * master_filename);
