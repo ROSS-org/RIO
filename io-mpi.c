@@ -155,7 +155,7 @@ void io_load_checkpoint(char * master_filename) {
     MPI_Aint offsets[2], extent;
 
     io_mpi_datatype_lp(&LP);
-    model_datatype(&MODEL);
+    ((datatype_f)g_io_lp_types[0].datatype)(&MODEL);
 
     offsets[0] = 0;
     oldtypes[0] = LP;
@@ -199,7 +199,7 @@ void io_load_checkpoint(char * master_filename) {
     // Load Data
     for (i = 0, b = buffer; i < partitions_count; i++, b += lp_size) {
         io_deserialize_lp(b, g_tw_lp[i]);
-        model_deserialize(b + sizeof(io_lp_store), g_tw_lp[i]);
+        ((deserialize_f)g_io_lp_types[0].deserialize)(b + sizeof(io_lp_store), g_tw_lp[i]);
     }
     return;
 }
@@ -216,7 +216,7 @@ void io_store_checkpoint(char * master_filename) {
     MPI_Aint offsets[2], extent;
 
     io_mpi_datatype_lp(&LP);
-    model_datatype(&MODEL);
+    ((datatype_f)g_io_lp_types[0].datatype)(&MODEL);
 
     offsets[0] = 0;
     oldtypes[0] = LP;
@@ -238,12 +238,12 @@ void io_store_checkpoint(char * master_filename) {
     int lp_size;
     MPI_Type_size(LP_STATE, &lp_size);
     lp_size = sizeof(io_lp_store); // these are not always the same!
-    int total_size = lp_size + model_size;
+    int total_size = lp_size + g_io_lp_types[0].model_size;
     char buffer[g_tw_nlp * total_size];
     void * b;
     for (i = 0, b = buffer; i < g_tw_nlp; i++, b += total_size) {
         io_serialize_lp(g_tw_lp[i], b);
-        model_serialize(g_tw_lp[i], b + lp_size);
+        ((serialize_f)g_io_lp_types[0].serialize)(g_tw_lp[i], b + lp_size);
     }
 
     // ASSUMPTION: static LP model size
@@ -328,7 +328,7 @@ void io_store_checkpoint(char * master_filename) {
         fprintf(file, "ROSSIO Version:\t%s\n", ROSSIO_VERSION);
 #endif
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
-        fprintf(file, "Model Size:\t%d\n", model_size);
+        fprintf(file, "Model Size:\t%d\n", g_io_lp_types[0].model_size);
         fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
         fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
 #ifdef RAND_NORMAL
