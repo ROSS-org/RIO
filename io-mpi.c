@@ -46,13 +46,6 @@ void io_init(int num_files, int num_partitions) {
     }
 }
 
-void io_setup(datatype_function model_dt, serialize_function model_s, deserialize_function model_ds, size_t store_size) {
-    model_datatype = model_dt;
-    model_serialize = model_s;
-    model_deserialize = model_ds;
-    model_size = store_size;
-}
-
 void io_final() {
     g_io_number_of_files = 0;
     g_io_number_of_partitions = 0;

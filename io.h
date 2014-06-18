@@ -34,7 +34,6 @@ extern io_partition * g_io_partitions;
 // API Functions
 void io_opts();
 void io_init(int num_files, int num_partitions);
-void io_setup (datatype_function , serialize_function , deserialize_function , size_t);
 void io_final();
 void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
