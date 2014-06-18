@@ -10,15 +10,12 @@
 
 // Null Initializations
 io_partition * g_io_partitions;
-datatype_function model_datatype;
-serialize_function model_serialize;
-deserialize_function model_deserialize;
-size_t model_size;
 
 // Default Values
 int g_io_number_of_files = 0;
 int g_io_number_of_partitions = 0;
 int g_io_partitions_per_rank = 0;
+io_lptype * g_io_lp_types = NULL;
 
 // local init flag (space has been allocated)
 int l_init_flag = 0;

@@ -58,3 +58,5 @@ struct io_lptype {
     deserialize_f revent;
     size_t model_size;
 };
+
+extern io_lptype * g_io_lp_types;
