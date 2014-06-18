@@ -28,21 +28,13 @@ typedef struct {
 #endif
 } io_lp_store;
 
-// function typedefs
-typedef void (*datatype_function)(MPI_Datatype *dt);
-typedef void (*serialize_function)(tw_lp *lp, void *store);
-typedef void (*deserialize_function)(void *store, tw_lp *lp);
-extern datatype_function model_datatype;
-extern serialize_function model_serialize;
-extern deserialize_function model_deserialize;
-extern size_t model_size;
-
 // length = g_io_partitions_per_rank
 extern io_partition * g_io_partitions;
 
 // API Functions
 void io_opts();
 void io_init(int num_files, int num_partitions);
+void io_setup (datatype_function , serialize_function , deserialize_function , size_t);
 void io_final();
 void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
@@ -50,7 +42,19 @@ void io_write_master_header(char * master_filename);
 void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
+// Internal functions
 void io_mpi_datatype_lp (MPI_Datatype *datatype);
 void io_serialize_lp (tw_lp *lp, void *store);
 void io_deserialize_lp (void *store, tw_lp *lp);
-void io_setup (datatype_function , serialize_function , deserialize_function , size_t);
+
+// Functions on a per LP Type basis
+typedef void (*datatype_f)(MPI_Datatype *dt);
+typedef void (*serialize_f)(tw_lp *lp, void *store);
+typedef void (*deserialize_f)(void *store, tw_lp *lp);
+
+struct io_lptype {
+    datatype_f init;
+    serialize_f event;
+    deserialize_f revent;
+    size_t model_size;
+};
