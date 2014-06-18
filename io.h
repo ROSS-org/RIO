@@ -51,11 +51,11 @@ typedef void (*datatype_f)(MPI_Datatype *dt);
 typedef void (*serialize_f)(tw_lp *lp, void *store);
 typedef void (*deserialize_f)(void *store, tw_lp *lp);
 
-struct io_lptype {
+typedef struct {
     datatype_f datatype;
     serialize_f serialize;
     deserialize_f deserialize;
     size_t model_size;
-};
+} io_lptype;
 
 extern io_lptype * g_io_lp_types;
