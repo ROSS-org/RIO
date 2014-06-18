@@ -89,3 +89,6 @@ This code loosely adheres to the ROSS coding standard:
 - underscores are used between words (in preference to camel case)
 
 ## Use Cases and Tests
+
+A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/phold-io).
+This model is being actively developed along side ROSSIO and will reflect the current API.
