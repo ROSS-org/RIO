@@ -52,9 +52,9 @@ typedef void (*serialize_f)(tw_lp *lp, void *store);
 typedef void (*deserialize_f)(void *store, tw_lp *lp);
 
 struct io_lptype {
-    datatype_f init;
-    serialize_f event;
-    deserialize_f revent;
+    datatype_f datatype;
+    serialize_f serialize;
+    deserialize_f deserialize;
     size_t model_size;
 };
 
