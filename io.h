@@ -33,6 +33,7 @@ extern io_partition * g_io_partitions;
 
 // API Functions
 void io_opts();
+void io_register_model_version(char *sha1);
 void io_init(int num_files, int num_partitions);
 void io_final();
 void io_read_master_header(char * master_filename);

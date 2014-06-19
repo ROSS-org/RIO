@@ -32,6 +32,12 @@ void io_opts () {
     tw_opt_add(io_opt);
 }
 
+char model_version[41];
+
+void io_register_model_version (char *sha1) {
+    strcpy(model_version, sha1);
+}
+
 void io_init(int num_files, int num_partitions) {
     if (num_partitions == 0) {
         num_partitions = tw_nnodes();
@@ -327,6 +333,7 @@ void io_store_checkpoint(char * master_filename) {
 #ifdef ROSSIO_VERSION
         fprintf(file, "ROSSIO Version:\t%s\n", ROSSIO_VERSION);
 #endif
+        fprintf(file, "MODEL Version:\t%s\n", model_version);
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
         fprintf(file, "Model Size:\t%d\n", g_io_lp_types[0].model_size);
         fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
