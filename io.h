@@ -5,33 +5,25 @@
 #include "ross.h"
 #include "io-config.h"
 
+
+// ** Global IO System variables ** //
+
+// Set with command line --io-parts
+// should be consistent across the system
 extern int g_io_number_of_partitions;
+
+// Set with command line --io-files
+// should be consistent across the system
 extern int g_io_number_of_files;
 
-typedef struct {
-	int part;
-	int file;
-	int offset;
-	int size;
-	int data_count;
-	int data_size;
-} io_partition;
+// Set with command line --io-ppr
+// If set with command line, should be consistent across system
+// otherwise it can vary by rank (uneven load)
 extern int g_io_partitions_on_rank;
 
-typedef struct {
-	tw_lpid gid;
-	int32_t rng[12];
-#ifdef RAND_NORMAL
-	double tw_normal_u1;
-	double tw_normal_u2;
-	int tw_normal_flipflop;
-#endif
-} io_lp_store;
 
-// length = g_io_partitions_per_rank
-extern io_partition * g_io_partitions;
+// ** API Functions, Types, and Variables ** //
 
-// API Functions
 void io_opts();
 void io_register_model_version(char *sha1);
 void io_init(int num_files, int num_partitions);
@@ -42,12 +34,7 @@ void io_write_master_header(char * master_filename);
 void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
-// Internal functions
-static void io_lp_mpi_datatype (MPI_Datatype *datatype);
-static void io_lp_serialize (tw_lp *lp, void *store);
-static void io_lp_deserialize (void *store, tw_lp *lp);
-
-// Functions on a per LP Type basis
+// LP type map and function struct
 typedef void (*datatype_f)(MPI_Datatype *dt);
 typedef void (*serialize_f)(tw_lp *lp, void *store);
 typedef void (*deserialize_f)(void *store, tw_lp *lp);
@@ -60,3 +47,31 @@ typedef struct {
 } io_lptype;
 
 extern io_lptype * g_io_lp_types;
+
+
+// ** Internal IO types, variables, and functions ** //
+
+typedef struct {
+	int part;
+	int file;
+	int offset;
+	int size;
+	int data_count;
+	int data_size;
+} io_partition;
+
+typedef struct {
+	tw_lpid gid;
+	int32_t rng[12];
+#ifdef RAND_NORMAL
+	double tw_normal_u1;
+	double tw_normal_u2;
+	int tw_normal_flipflop;
+#endif
+} io_lp_store;
+
+extern io_partition * g_io_partitions;
+
+static void io_lp_mpi_datatype (MPI_Datatype *datatype);
+static void io_lp_serialize (tw_lp *lp, void *store);
+static void io_lp_deserialize (void *store, tw_lp *lp);
