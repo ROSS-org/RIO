@@ -346,7 +346,7 @@ void io_store_checkpoint(char * master_filename) {
     }
 }
 
-void io_lp_mpi_datatype (MPI_Datatype *datatype) {
+static void io_lp_mpi_datatype (MPI_Datatype *datatype) {
     int i;
 
     int typecount = 1 + g_tw_nRNG_per_lp;
@@ -391,7 +391,7 @@ void io_lp_mpi_datatype (MPI_Datatype *datatype) {
     MPI_Type_commit(datatype);
 }
 
-void io_lp_serialize (tw_lp *lp, void *store) {
+static void io_lp_serialize (tw_lp *lp, void *store) {
     int i, j;
 
     io_lp_store tmp;
@@ -413,7 +413,7 @@ void io_lp_serialize (tw_lp *lp, void *store) {
     memcpy(store, &tmp, sizeof(io_lp_store));
 }
 
-void io_lp_deserialize (void *store, tw_lp *lp) {
+static void io_lp_deserialize (void *store, tw_lp *lp) {
     int i, j;
 
     io_lp_store tmp;
