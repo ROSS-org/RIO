@@ -43,9 +43,9 @@ void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
 // Internal functions
-void io_mpi_datatype_lp (MPI_Datatype *datatype);
-void io_serialize_lp (tw_lp *lp, void *store);
-void io_deserialize_lp (void *store, tw_lp *lp);
+void io_lp_mpi_datatype (MPI_Datatype *datatype);
+void io_lp_serialize (tw_lp *lp, void *store);
+void io_lp_deserialize (void *store, tw_lp *lp);
 
 // Functions on a per LP Type basis
 typedef void (*datatype_f)(MPI_Datatype *dt);

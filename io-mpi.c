@@ -160,7 +160,7 @@ void io_load_checkpoint(char * master_filename) {
     int blockcounts[2];
     MPI_Aint offsets[2], extent;
 
-    io_mpi_datatype_lp(&LP);
+    io_lp_mpi_datatype(&LP);
     ((datatype_f)g_io_lp_types[0].datatype)(&MODEL);
 
     offsets[0] = 0;
@@ -204,7 +204,7 @@ void io_load_checkpoint(char * master_filename) {
 
     // Load Data
     for (i = 0, b = buffer; i < partitions_count; i++, b += lp_size) {
-        io_deserialize_lp(b, g_tw_lp[i]);
+        io_lp_deserialize(b, g_tw_lp[i]);
         ((deserialize_f)g_io_lp_types[0].deserialize)(b + sizeof(io_lp_store), g_tw_lp[i]);
     }
     return;
@@ -221,7 +221,7 @@ void io_store_checkpoint(char * master_filename) {
     int blockcounts[2];
     MPI_Aint offsets[2], extent;
 
-    io_mpi_datatype_lp(&LP);
+    io_lp_mpi_datatype(&LP);
     ((datatype_f)g_io_lp_types[0].datatype)(&MODEL);
 
     offsets[0] = 0;
@@ -248,7 +248,7 @@ void io_store_checkpoint(char * master_filename) {
     char buffer[g_tw_nlp * total_size];
     void * b;
     for (i = 0, b = buffer; i < g_tw_nlp; i++, b += total_size) {
-        io_serialize_lp(g_tw_lp[i], b);
+        io_lp_serialize(g_tw_lp[i], b);
         ((serialize_f)g_io_lp_types[0].serialize)(g_tw_lp[i], b + lp_size);
     }
 
@@ -346,7 +346,7 @@ void io_store_checkpoint(char * master_filename) {
     }
 }
 
-void io_mpi_datatype_lp (MPI_Datatype *datatype) {
+void io_lp_mpi_datatype (MPI_Datatype *datatype) {
     int i;
 
     int typecount = 1 + g_tw_nRNG_per_lp;
@@ -391,7 +391,7 @@ void io_mpi_datatype_lp (MPI_Datatype *datatype) {
     MPI_Type_commit(datatype);
 }
 
-void io_serialize_lp (tw_lp *lp, void *store) {
+void io_lp_serialize (tw_lp *lp, void *store) {
     int i, j;
 
     io_lp_store tmp;
@@ -413,7 +413,7 @@ void io_serialize_lp (tw_lp *lp, void *store) {
     memcpy(store, &tmp, sizeof(io_lp_store));
 }
 
-void io_deserialize_lp (void *store, tw_lp *lp) {
+void io_lp_deserialize (void *store, tw_lp *lp) {
     int i, j;
 
     io_lp_store tmp;
