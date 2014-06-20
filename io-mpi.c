@@ -25,6 +25,7 @@ const tw_optdef io_opt[] = {
     TWOPT_GROUP("ROSSIO"),
     TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
     TWOPT_UINT("io-parts", g_io_number_of_partitions, "io partitions"),
+    TWOPT_UINT("io-ppr", g_io_partitions_on_rank, "io partitions per rank"),
     TWOPT_END()
 };
 
