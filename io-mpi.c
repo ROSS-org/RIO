@@ -155,27 +155,6 @@ void io_load_checkpoint(char * master_filename) {
         assert(my_partitions[i].data_size == my_partitions[0].data_size && "ASSUMPTION: all data size is the same\n");
     }
 
-    // Set up datatypes
-    MPI_Datatype LP, MODEL, LP_STATE;
-    MPI_Datatype oldtypes[2];
-    int blockcounts[2];
-    MPI_Aint offsets[2], extent;
-
-    io_lp_mpi_datatype(&LP);
-    ((datatype_f)g_io_lp_types[0].datatype)(&MODEL);
-
-    offsets[0] = 0;
-    oldtypes[0] = LP;
-    blockcounts[0] = 1;
-
-    MPI_Type_extent(oldtypes[0], &extent);
-    offsets[1] = blockcounts[0] * extent;
-    oldtypes[1] = MODEL;
-    blockcounts[1] = 1;
-
-    MPI_Type_struct(2, blockcounts, offsets, oldtypes, &LP_STATE);
-    MPI_Type_commit(&LP_STATE);
-
     // Read file
     MPI_Comm file_comm;
     int file_number = my_partitions[0].file;
@@ -197,7 +176,7 @@ void io_load_checkpoint(char * master_filename) {
     for (i = 0; i < g_io_partitions_on_rank; i++){
         offset = (long long) my_partitions[i].offset;
         MPI_File_seek(fh, offset, MPI_SEEK_SET);
-        MPI_File_read(fh, b, my_partitions[i].data_count, LP_STATE, &status);
+        MPI_File_read(fh, b, partitions_size, MPI_BYTE, &status);
         b += my_partitions[i].size;
     }
 
@@ -216,34 +195,12 @@ void io_store_checkpoint(char * master_filename) {
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
-    // Create joint datatype
-    MPI_Datatype LP, MODEL, LP_STATE;
-    MPI_Datatype oldtypes[2];
-    int blockcounts[2];
-    MPI_Aint offsets[2], extent;
-
-    io_lp_mpi_datatype(&LP);
-    ((datatype_f)g_io_lp_types[0].datatype)(&MODEL);
-
-    offsets[0] = 0;
-    oldtypes[0] = LP;
-    blockcounts[0] = 1;
-
-    MPI_Type_extent(oldtypes[0], &extent);
-    offsets[1] = blockcounts[0] * extent;
-    oldtypes[1] = MODEL;
-    blockcounts[1] = 1;
-
-    MPI_Type_struct(2, blockcounts, offsets, oldtypes, &LP_STATE);
-    MPI_Type_commit(&LP_STATE);
-
     // ASSUMPTION: A checkpoint writes LP data (only)
     // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Gather LP data
     int lp_size;
-    MPI_Type_size(LP_STATE, &lp_size);
     lp_size = sizeof(io_lp_store); // these are not always the same!
     int total_size = lp_size + g_io_lp_types[0].model_size;
     char buffer[g_tw_nlp * total_size];
@@ -277,7 +234,7 @@ void io_store_checkpoint(char * master_filename) {
     MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
     MPI_File_seek(fh, offset, MPI_SEEK_SET);
 
-    MPI_File_write(fh, &buffer, g_tw_nlp, LP_STATE, &status);
+    MPI_File_write(fh, &buffer, total_size * g_tw_nlp, MPI_BYTE, &status);
 
     MPI_File_close(&fh);
 
