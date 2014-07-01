@@ -6,6 +6,11 @@ These data structures are organized into partitions that can be read by MPI task
 
 This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
+**ALERT:**
+This system has only been tested with the [gonsie/SR](http://github.com/gonsie/SR) fork of ROSS. 
+While ROSSIO is being developed as an independent module, there are some modifications that will need to be implemented within the ROSS core.
+Note that while ROSSIO is under active development it **may not** function with regular ROSS.
+
 ## Example
 
 A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/phold-io).
@@ -40,7 +45,6 @@ typedef struct {
 
 extern io_lptype * g_io_lp_types;
 ```
-
 
 ### System Functions
 
