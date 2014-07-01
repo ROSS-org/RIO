@@ -2,7 +2,7 @@ PROJECT(ROSSIO)
 
 SET(rossio_srcs io.h)
 
-OPTION(USE_MPI_IO "Use MPI for I/O operations? Defaults to POSIX" OFF)
+OPTION(USE_MPI_IO "Use MPI for I/O operations? Defaults to POSIX" ON)
 IF(USE_MPI_IO)
 	SET(rossio_srcs ${rossio_srcs} io-mpi.c)
 ELSE(USE_MPI_IO)
