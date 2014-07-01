@@ -25,6 +25,21 @@ Each LP-type and event-type must be able to be serialize and de-serialize its da
 
 ROSS defines LP types with an array of structs function pointers (one tw_lptype struct per LP type).
 Similarly, ROSSIO will use an array of io_lptype structs, which include function pointers to the serialize and deserialize functions.
+Here is the code with the relevant type definitions:
+
+```
+// LP type map and function struct
+typedef void (*serialize_f)(tw_lp *lp, void *store);
+typedef void (*deserialize_f)(void *store, tw_lp *lp);
+
+typedef struct {
+    serialize_f serialize;
+    deserialize_f deserialize;
+    size_t model_size;
+} io_lptype;
+
+extern io_lptype * g_io_lp_types;
+```
 
 
 ### System Functions
