@@ -35,12 +35,10 @@ void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
 // LP type map and function struct
-typedef void (*datatype_f)(MPI_Datatype *dt);
 typedef void (*serialize_f)(tw_lp *lp, void *store);
 typedef void (*deserialize_f)(void *store, tw_lp *lp);
 
 typedef struct {
-    datatype_f datatype;
     serialize_f serialize;
     deserialize_f deserialize;
     size_t model_size;
@@ -72,6 +70,5 @@ typedef struct {
 
 extern io_partition * g_io_partitions;
 
-static void io_lp_mpi_datatype (MPI_Datatype *datatype);
 static void io_lp_serialize (tw_lp *lp, void *store);
 static void io_lp_deserialize (void *store, tw_lp *lp);

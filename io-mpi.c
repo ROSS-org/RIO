@@ -304,51 +304,6 @@ void io_store_checkpoint(char * master_filename) {
     }
 }
 
-static void io_lp_mpi_datatype (MPI_Datatype *datatype) {
-    int i;
-
-    int typecount = 1 + g_tw_nRNG_per_lp;
-    int rng_types = 1;
-#ifdef RAND_NORMAL
-    typecount += 2 * g_tw_nRNG_per_lp;
-    rng_types = 3;
-#endif
-
-    MPI_Datatype oldtypes[typecount];
-    int blockcounts[typecount];
-    MPI_Aint offsets[typecount], extent;
-
-    // Type 1: tw_lpid x 1
-    offsets[0] = 0;
-    oldtypes[0] = MPI_UNSIGNED_LONG_LONG;
-    blockcounts[0] = 1;
-
-    for (i = 0; i < g_tw_nRNG_per_lp; i++) {
-        // Type 2: int32_t x 12
-        MPI_Type_extent(oldtypes[rng_types*i+0], &extent);
-        offsets[rng_types*i+1] = blockcounts[rng_types*i+0] * extent;
-        oldtypes[rng_types*i+1] = MPI_INT32_T;
-        blockcounts[rng_types*i+1] = 12;
-
-#ifdef RAND_NORMAL
-        // Type 3: double x 2
-        MPI_Type_extent(oldtypes[rng_types*i+1], &extent);
-        offsets[rng_types*i+2] = offsets[rng_types*i+1] + blockcounts[rng_types*i+1] * extent;
-        oldtypes[rng_types*i+2] = MPI_DOUBLE;
-        blockcounts[rng_types*i+2] = 2;
-
-        //Type 4: int x 1
-        MPI_Type_extent(oldtypes[rng_types*i+2], &extent);
-        offsets[rng_types*i+3] = offsets[rng_types*i+2] + blockcounts[rng_types*i+2] * extent;
-        oldtypes[rng_types*i+3] = MPI_INT;
-        blockcounts[rng_types*i+3] = 1;
-#endif
-    }
-
-    MPI_Type_struct(typecount, blockcounts, offsets, oldtypes, datatype);
-    MPI_Type_commit(datatype);
-}
-
 static void io_lp_serialize (tw_lp *lp, void *store) {
     int i, j;
 
