@@ -6,6 +6,8 @@ This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 ## API
 
+*Note: please see the [wiki](http://github.com/gonsie/ROSSIO/wiki) for more detailed documentation.*
+
 ### User Implemented Functions
 
 Each LP-type and event-type must be able to be serialize and de-serialize its data. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement:
