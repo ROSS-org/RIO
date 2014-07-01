@@ -176,7 +176,7 @@ void io_load_checkpoint(char * master_filename) {
     for (i = 0; i < g_io_partitions_on_rank; i++){
         offset = (long long) my_partitions[i].offset;
         MPI_File_seek(fh, offset, MPI_SEEK_SET);
-        MPI_File_read(fh, b, partitions_size, MPI_BYTE, &status);
+        MPI_File_read(fh, b, my_partitions[i].size, MPI_BYTE, &status);
         b += my_partitions[i].size;
     }
 
