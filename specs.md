@@ -1,8 +1,16 @@
 # ROSS IO Specifications
 
-The purpose of this system is to add checkpointing to [ROSS](http://github.com/carothersc/ROSS). A checkpoint consists of all the LP states and events in the system. These data structures are organized into partitions that can be read by MPI tasks. 
+The purpose of this system is to add checkpointing to [ROSS](http://github.com/carothersc/ROSS).
+A checkpoint consists of all the LP states and events in the system. 
+These data structures are organized into partitions that can be read by MPI tasks. 
 
 This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
+
+## Example
+
+A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/phold-io).
+This model is being actively developed along side ROSSIO and will reflect the current API.
+
 
 ## API
 
@@ -10,11 +18,13 @@ This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 ### User Implemented Functions
 
-Each LP-type and event-type must be able to be serialize and de-serialize its data. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement:
+Each LP-type and event-type must be able to be serialize and de-serialize its data. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement
 
 - Serialize function
 - De-serialize function
-- MPI Datatype function
+
+ROSS defines LP types with an array of structs function pointers (one tw_lptype struct per LP type).
+Similarly, ROSSIO will use an array of io_lptype structs, which include function pointers to the serialize and deserialize functions.
 
 
 ### System Functions
@@ -37,7 +47,7 @@ Each LP-type and event-type must be able to be serialize and de-serialize its da
 
 ### Read Me File
 
-This is a human readable file that will not be parsed by the ROSSIO system.
+This is a human readable file that will **not** be parsed by the ROSSIO system.
 This file contains information about the checkpoint files, including:
 
 - How many files are in the checkpoint
@@ -90,7 +100,3 @@ This code loosely adheres to the ROSS coding standard:
 - functions and variables within this module are prefaced with `io`
 - underscores are used between words (in preference to camel case)
 
-## Use Cases and Tests
-
-A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/phold-io).
-This model is being actively developed along side ROSSIO and will reflect the current API.
