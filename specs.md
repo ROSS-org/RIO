@@ -48,6 +48,14 @@ extern io_lptype * g_io_lp_types;
 
 ### System Functions
 
+#### Initializing the IO system
+
+ROSSIO can be set up from the command line, or through an io_init function.
+In order to support the command-line options, a call to `io_opts()` must be made before the call `tw_init()` in main.
+Otherwise, ROSSIO can be initialized with `io_init(int files, int partitions)`.
+
+#### Checkpointing functions
+
 - Load checkpoint from files
   - block reading of data
   - de-serializing of data structures
