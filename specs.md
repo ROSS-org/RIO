@@ -34,8 +34,8 @@ Here is the code with the relevant type definitions:
 
 ```
 // LP type map and function struct
-typedef void (*serialize_f)(tw_lp *lp, void *store);
-typedef void (*deserialize_f)(void *store, tw_lp *lp);
+typedef void (*serialize_f)(void *state, void *buffer, tw_lp *lp);
+typedef void (*deserialize_f)(void *state, void *buffer, tw_lp *lp);
 
 typedef struct {
     serialize_f serialize;
