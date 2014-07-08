@@ -184,8 +184,8 @@ void io_load_checkpoint(char * master_filename) {
 
     // Load Data
     for (i = 0, b = buffer; i < partitions_count; i++, b += lp_size) {
-        io_lp_deserialize(b, g_tw_lp[i]);
-        ((deserialize_f)g_io_lp_types[0].deserialize)(b + sizeof(io_lp_store), g_tw_lp[i]);
+        io_lp_deserialize(g_tw_lp[i], b);
+        ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[i]->cur_state, b + sizeof(io_lp_store));
     }
     return;
 }
@@ -207,7 +207,7 @@ void io_store_checkpoint(char * master_filename) {
     void * b;
     for (i = 0, b = buffer; i < g_tw_nlp; i++, b += total_size) {
         io_lp_serialize(g_tw_lp[i], b);
-        ((serialize_f)g_io_lp_types[0].serialize)(g_tw_lp[i], b + lp_size);
+        ((serialize_f)g_io_lp_types[0].serialize)(g_tw_lp[i]->cur_state, b + lp_size);
     }
 
     // ASSUMPTION: static LP model size
@@ -304,7 +304,7 @@ void io_store_checkpoint(char * master_filename) {
     }
 }
 
-static void io_lp_serialize (tw_lp *lp, void *store) {
+static void io_lp_serialize (tw_lp *lp, void *buffer) {
     int i, j;
 
     io_lp_store tmp;
@@ -326,7 +326,7 @@ static void io_lp_serialize (tw_lp *lp, void *store) {
     memcpy(store, &tmp, sizeof(io_lp_store));
 }
 
-static void io_lp_deserialize (void *store, tw_lp *lp) {
+static void io_lp_deserialize (tw_lp *lp, void *buffer) {
     int i, j;
 
     io_lp_store tmp;

@@ -35,8 +35,8 @@ void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
 // LP type map and function struct
-typedef void (*serialize_f)(tw_lp *lp, void *store);
-typedef void (*deserialize_f)(void *store, tw_lp *lp);
+typedef void (*serialize_f)(void * state, void * buffer);
+typedef void (*deserialize_f)(void * state, void * buffer);
 
 typedef struct {
     serialize_f serialize;
@@ -70,5 +70,5 @@ typedef struct {
 
 extern io_partition * g_io_partitions;
 
-static void io_lp_serialize (tw_lp *lp, void *store);
-static void io_lp_deserialize (void *store, tw_lp *lp);
+static void io_lp_serialize (tw_lp * lp, void * buffer);
+static void io_lp_deserialize (tw_lp * lp, void * buffer);
