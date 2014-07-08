@@ -35,8 +35,8 @@ void io_load_checkpoint(char * master_filename);
 void io_store_checkpoint(char * master_filename);
 
 // LP type map and function struct
-typedef void (*serialize_f)(void * state, void * buffer);
-typedef void (*deserialize_f)(void * state, void * buffer);
+typedef void (*serialize_f)(void * state, void * buffer, tw_lp *lp);
+typedef void (*deserialize_f)(void * state, void * buffer, tw_lp *lp);
 
 typedef struct {
     serialize_f serialize;
