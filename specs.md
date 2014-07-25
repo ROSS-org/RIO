@@ -23,7 +23,9 @@ This model is being actively developed along side ROSSIO and will reflect the cu
 
 ### User Implemented Functions
 
-Each LP-type and event-type must be able to be serialize and de-serialize its data. This can/should be binary data. Therefore, for each LP and event type the model-developer must implement
+Each LP-type and event-type must be able to be serialize and de-serialize its data.
+This can/should be binary data.
+Therefore, for each LP and event type the model-developer must implement
 
 - Serialize function
 - De-serialize function
