@@ -23,29 +23,38 @@ This model is being actively developed along side ROSSIO and will reflect the cu
 
 ### User Implemented Functions
 
-Each LP-type and event-type must be able to be serialize and de-serialize its data.
-This can/should be binary data.
-Therefore, for each LP and event type the model-developer must implement
+There are four functions the model developer is responsible for:
 
-- Serialize function
-- De-serialize function
+- Serialize function: places LP data into a provided buffer
+- Deserialize function: removes LP data from a buffer
+- Model Size function (optional): returns the size of the serialized LP state.
+This function must be implemented if LPs in the system have a variable size.
+- LP type map function (option): return the type (index in the type array) of the LP.
+This function must be implemented if there are multiple LP types in the system.
 
 ROSS defines LP types with an array of structs function pointers (one tw_lptype struct per LP type).
 Similarly, ROSSIO will use an array of io_lptype structs, which include function pointers to the serialize and deserialize functions.
 Here is the code with the relevant type definitions:
 
 ```
-// LP type map and function struct
+// LP type array
+// each type is a struct of function pointers
+
 typedef void (*serialize_f)(void *state, void *buffer, tw_lp *lp);
 typedef void (*deserialize_f)(void *state, void *buffer, tw_lp *lp);
+typedef size_t (*model_size_f)(void *state, tw_lp *lp);
 
 typedef struct {
     serialize_f serialize;
     deserialize_f deserialize;
-    size_t model_size;
+    model_size_f model_size;
 } io_lptype;
 
 extern io_lptype * g_io_lp_types;
+
+// ROSS type mapping function pointer
+typedef tw_lpid (*tw_typemap_f)(tw_lpid gid);
+tw_typemap_f g_tw_lp_typemap;
 ```
 
 ### System Functions
