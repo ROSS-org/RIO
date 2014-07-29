@@ -29,7 +29,7 @@ There are four functions the model developer is responsible for:
 - Deserialize function: removes LP data from a buffer
 - Model Size function (optional): returns the size of the serialized LP state.
 This function must be implemented if LPs in the system have a variable size.
-- LP type map function (option): return the type (index in the type array) of the LP.
+- LP type map function (optional): return the type (index in the type array) of the LP.
 This function must be implemented if there are multiple LP types in the system.
 
 ROSS defines LP types with an array of structs function pointers (one tw_lptype struct per LP type).
