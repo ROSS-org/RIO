@@ -198,9 +198,6 @@ void io_store_checkpoint(char * master_filename) {
     // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
-    // TODO: make this flag a global variable
-    int dynamic_lp_size_flag = 1;
-
     // Gather LP size data
     int lp_size = sizeof(io_lp_store);
     size_t model_sizes[g_tw_nlp];
