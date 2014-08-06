@@ -262,11 +262,6 @@ void io_store_checkpoint(char * master_filename) {
     MPI_Datatype MPI_IO_PART;
     MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
-    
-    // TWO OPTIONS HERE
-    // 1. gather all to rank 0 and write ascii via posix
-    // 2. a single write operation across MPI_COMM_WORLD to all write binary data
-    // ==> implementing two now (1 in previous commit)
 
     for (i = 0; i < g_io_partitions_on_rank; i++) {
         printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tcount %d\n\tdsize %d\n\n", mpi_rank, my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset, my_partitions[i].size, my_partitions[i].data_count, my_partitions[i].data_size);
@@ -281,6 +276,14 @@ void io_store_checkpoint(char * master_filename) {
     MPI_File_seek(fh, offset, MPI_SEEK_SET);
 
     MPI_File_write(fh, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+
+    // Write model size array
+    offset = (long long) 0;
+    MPI_Exscan((long long)g_tw_nlp, offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    offset += (long long) sizeof(io_partition) * g_io_partitions;
+    MPI_File_seek(fh, offset, MPI_SEEK_SET);
+
+    MPI_File_write(fh, &model_sizes, g_tw_nlp, MPI_INT, &status);
 
     MPI_File_close(&fh);
 
