@@ -37,11 +37,12 @@ void io_store_checkpoint(char * master_filename);
 // LP type map and function struct
 typedef void (*serialize_f)(void * state, void * buffer, tw_lp *lp);
 typedef void (*deserialize_f)(void * state, void * buffer, tw_lp *lp);
+typedef size_t (*model_size_f)(void * state, tw_lp *lp);
 
 typedef struct {
     serialize_f serialize;
     deserialize_f deserialize;
-    size_t model_size;
+    model_size_f model_size;
 } io_lptype;
 
 extern io_lptype * g_io_lp_types;
