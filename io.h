@@ -56,7 +56,6 @@ typedef struct {
 	int offset;
 	int size;
 	int data_count;
-	int data_size;
 } io_partition;
 
 typedef struct {

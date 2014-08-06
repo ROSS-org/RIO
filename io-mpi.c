@@ -128,7 +128,7 @@ void io_load_checkpoint(char * master_filename) {
 
     // Metadata datatype
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(6, MPI_INT, &MPI_IO_PART);
+    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
     int partition_md_size;
     MPI_Type_size(MPI_IO_PART, &partition_md_size);
@@ -152,13 +152,12 @@ void io_load_checkpoint(char * master_filename) {
     // ASSUME UNIFORM DATA SIZE
     for (i = 1; i < g_io_partitions_on_rank; i++) {
         assert(my_partitions[i].file == my_partitions[0].file && "ERROR: Some rank has partitions spread across files\n");
-        assert(my_partitions[i].data_size == my_partitions[0].data_size && "ASSUMPTION: all data size is the same\n");
     }
 
     // Read file
     MPI_Comm file_comm;
     int file_number = my_partitions[0].file;
-    int lp_size = my_partitions[0].data_size;
+    int lp_size = sizeof(io_lp_store);
     int partitions_size = 0;
     int partitions_count = 0;
     for (i = 0; i < g_io_partitions_on_rank; i++) {
@@ -199,18 +198,33 @@ void io_store_checkpoint(char * master_filename) {
     // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
-    // Gather LP data
-    int lp_size;
-    lp_size = sizeof(io_lp_store); // these are not always the same!
-    int total_size = lp_size + g_io_lp_types[0].model_size;
-    char buffer[g_tw_nlp * total_size];
-    void * b;
-    for (i = 0, b = buffer; i < g_tw_nlp; i++, b += total_size) {
-        io_lp_serialize(g_tw_lp[i], b);
-        ((serialize_f)g_io_lp_types[0].serialize)(g_tw_lp[i]->cur_state, b + lp_size, g_tw_lp[i]);
+    // TODO: make this flag a global variable
+    int dynamic_lp_size_flag = 1;
+
+    // Gather LP size data
+    int lp_size = sizeof(io_lp_store);
+    size_t model_sizes[g_tw_nlp];
+    int sum_model_size;
+
+    // always do this loop to allow for interleaved LP types in g_tw_lp
+    // TODO: add short cut for one-type, non-dynamic models?
+    for (i = 0; i < g_tw_nlp; i++) {
+        int lp_type_index = g_tw_typemap(g_tw_lp[i]->gid)
+        model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[i]->cur_state, g_tw_lp[i]);
+        sum_model_size += model_sizes[i];
     }
 
-    // ASSUMPTION: static LP model size
+    int sum_lp_size = g_tw_nlp * lp_size;
+    int sum_size = sum_lp_size + sum_model_size;
+
+    char buffer[sum_size];
+    void * b;
+    for (i = 0, b = buffer; i < g_tw_nlp; i++) {
+        io_lp_serialize(g_tw_lp[i], b);
+        int lp_type_index = g_tw_typemap(g_tw_lp[i]->gid);
+        ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[i]->cur_state, b + lp_size, g_tw_lp[i]);
+        b += lp_size + model_sizes[i];
+    }
 
     g_io_partitions_on_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
@@ -223,10 +237,10 @@ void io_store_checkpoint(char * master_filename) {
 
     int file_number = mpi_rank / io_ranks_per_file;
     int file_position = mpi_rank % io_ranks_per_file;
-    MPI_Offset offset = (long long) total_size * g_tw_nlp * file_position;
-    // assume const g_tw_nlp
+    MPI_Offset offset = (long long) 0;
 
     MPI_Comm_split(MPI_COMM_WORLD, file_number, file_position, &file_comm);
+    MPI_Exscan((long long)sum_size, offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
 
     // Write
     char filename[100];
@@ -234,7 +248,7 @@ void io_store_checkpoint(char * master_filename) {
     MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
     MPI_File_seek(fh, offset, MPI_SEEK_SET);
 
-    MPI_File_write(fh, &buffer, total_size * g_tw_nlp, MPI_BYTE, &status);
+    MPI_File_write(fh, &buffer, sum_size, MPI_BYTE, &status);
 
     MPI_File_close(&fh);
 
@@ -244,13 +258,12 @@ void io_store_checkpoint(char * master_filename) {
         my_partitions[i].part = (mpi_rank * g_io_partitions_on_rank) + i;
         my_partitions[i].file = file_number;
         my_partitions[i].data_count = g_tw_nlp / g_io_partitions_on_rank;
-        my_partitions[i].data_size = total_size;
-        my_partitions[i].size = my_partitions[i].data_count * my_partitions[i].data_size;
+        my_partitions[i].size = sum_size;
         my_partitions[i].offset = offset;
     }
 
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(6, MPI_INT, &MPI_IO_PART);
+    MPI_Type_contiguous(5, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
     
     // TWO OPTIONS HERE
@@ -293,7 +306,6 @@ void io_store_checkpoint(char * master_filename) {
 #endif
         fprintf(file, "MODEL Version:\t%s\n", model_version);
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
-        fprintf(file, "Model Size:\t%d\n", g_io_lp_types[0].model_size);
         fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
         fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
 #ifdef RAND_NORMAL
