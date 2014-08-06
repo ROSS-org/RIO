@@ -106,7 +106,6 @@ Each block of metadata contians the following information on a partition:
 - Partition offset (within file)
 - Partition size
 - Data item count
-- Data item size (static value is optional)
 
 ### Data Files
 
