@@ -206,7 +206,7 @@ void io_store_checkpoint(char * master_filename) {
     // always do this loop to allow for interleaved LP types in g_tw_lp
     // TODO: add short cut for one-type, non-dynamic models?
     for (i = 0; i < g_tw_nlp; i++) {
-        int lp_type_index = g_tw_typemap(g_tw_lp[i]->gid)
+        int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
         model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[i]->cur_state, g_tw_lp[i]);
         sum_model_size += model_sizes[i];
     }
@@ -218,7 +218,7 @@ void io_store_checkpoint(char * master_filename) {
     void * b;
     for (i = 0, b = buffer; i < g_tw_nlp; i++) {
         io_lp_serialize(g_tw_lp[i], b);
-        int lp_type_index = g_tw_typemap(g_tw_lp[i]->gid);
+        int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
         ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[i]->cur_state, b + lp_size, g_tw_lp[i]);
         b += lp_size + model_sizes[i];
     }
@@ -235,9 +235,10 @@ void io_store_checkpoint(char * master_filename) {
     int file_number = mpi_rank / io_ranks_per_file;
     int file_position = mpi_rank % io_ranks_per_file;
     MPI_Offset offset = (long long) 0;
+    long long contribute = (long long) sum_size;
 
     MPI_Comm_split(MPI_COMM_WORLD, file_number, file_position, &file_comm);
-    MPI_Exscan((long long)sum_size, offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
+    MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
 
     // Write
     char filename[100];
@@ -268,7 +269,7 @@ void io_store_checkpoint(char * master_filename) {
     }
     int psize;
     MPI_Type_size(MPI_IO_PART, &psize);
-    printf("Metadata size: %d or %d\n", psize, sizeof(io_partition));
+    printf("Metadata size: %d or %lu\n", psize, sizeof(io_partition));
 
     offset = (long long) sizeof(io_partition) * g_io_partitions_on_rank * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
@@ -279,11 +280,12 @@ void io_store_checkpoint(char * master_filename) {
 
     // Write model size array
     offset = (long long) 0;
-    MPI_Exscan((long long)g_tw_nlp, offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    offset += (long long) sizeof(io_partition) * g_io_partitions;
+    contribute = (long long) g_tw_nlp;
+    MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
     MPI_File_seek(fh, offset, MPI_SEEK_SET);
 
-    MPI_File_write(fh, &model_sizes, g_tw_nlp, MPI_INT, &status);
+    MPI_File_write(fh, model_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
 
     MPI_File_close(&fh);
 
