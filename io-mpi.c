@@ -142,6 +142,29 @@ void io_load_checkpoint(char * master_filename) {
 
     MPI_File_read(fh, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
 
+    // error check
+    int count_sum = 0;
+    for (i = 0; i < g_io_partitions_on_rank; i++) {
+        count_sum += my_partitions[i].data_count;
+    }
+    assert(count_sum == g_tw_nlp && "ERROR: wrong number of LPs in partitions");
+
+    // read size array
+    offset = (long long) 0;
+    long long contribute = (long long) g_tw_nlp;
+    MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
+
+    size_t model_sizes[g_tw_nlp];
+    int index = 0;
+    for (i = 0; i < g_io_partitions_on_rank; i++){
+        MPI_File_seek(fh, offset, MPI_SEEK_SET);
+        int data_count = my_partitions[i].data_count;
+        MPI_File_write(fh, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        index += data_count;
+        offset += (long long) (sizeof(MPI_UNSIGNED_LONG) * data_count);
+    }
+
     MPI_File_close(&fh);
 
     for (i = 0; i < g_io_partitions_on_rank; i++) {
@@ -149,7 +172,6 @@ void io_load_checkpoint(char * master_filename) {
     }
     
     // Now data files
-    // ASSUME UNIFORM DATA SIZE
     for (i = 1; i < g_io_partitions_on_rank; i++) {
         assert(my_partitions[i].file == my_partitions[0].file && "ERROR: Some rank has partitions spread across files\n");
     }
@@ -182,9 +204,10 @@ void io_load_checkpoint(char * master_filename) {
     MPI_File_close(&fh);
 
     // Load Data
-    for (i = 0, b = buffer; i < partitions_count; i++, b += lp_size) {
+    for (i = 0, b = buffer; i < partitions_count; i++) {
         io_lp_deserialize(g_tw_lp[i], b);
-        ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[i]->cur_state, b + sizeof(io_lp_store), g_tw_lp[i]);
+        ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[i]->cur_state, b + lp_size, g_tw_lp[i]);
+        b += lp_size + model_sizes[i];
     }
     return;
 }
