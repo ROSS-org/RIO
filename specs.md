@@ -99,13 +99,18 @@ This file contains information about the checkpoint files, including:
 
 The master header contains all of the meta-data for the partitions. 
 This file is not human readable (binary data).
+Within this file, the metadata is broken into two blocks: partition metadata and model size data.
 
-Each block of metadata contians the following information on a partition:
+The first block of metadata contians blocks of the following information on a partition:
 - Partition number
 - Partition file
 - Partition offset (within file)
 - Partition size
 - Data item count
+
+The second block contains model size arrays.
+For the LPs in each partition, the LP size is enumerated in an array.
+These arrays can be variable in length since there may be an uneven number of LPs per partition.
 
 ### Data Files
 
