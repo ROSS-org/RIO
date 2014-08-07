@@ -160,9 +160,9 @@ void io_load_checkpoint(char * master_filename) {
     for (i = 0; i < g_io_partitions_on_rank; i++){
         MPI_File_seek(fh, offset, MPI_SEEK_SET);
         int data_count = my_partitions[i].data_count;
-        MPI_File_write(fh, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        MPI_File_read(fh, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
         index += data_count;
-        offset += (long long) (sizeof(MPI_UNSIGNED_LONG) * data_count);
+        offset += (long long) data_count;
     }
 
     MPI_File_close(&fh);
