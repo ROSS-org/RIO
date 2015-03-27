@@ -1,10 +1,11 @@
+#ifndef INC_io_h
+#define INC_io_h
+
 //Elsa Gonsiorowski
 //Rensselaer Polytechnic Institute
 //Decemeber 13, 2013
 
 #include "ross.h"
-#include "io-config.h"
-
 
 // ** Global IO System variables ** //
 
@@ -21,6 +22,15 @@ extern int g_io_number_of_files;
 // otherwise it can vary by rank (uneven load)
 extern int g_io_partitions_on_rank;
 
+enum io_load_e {
+	NONE,		// don't from checkpoint
+	PRE_INIT,	// load LPs then lp->init
+	INIT,		// load LPs instead lp->init
+	POST_INIT,	// load LPs after lp->init
+};
+typedef enum io_load_e io_load_type;
+extern io_load_type g_io_load_at;
+extern char g_io_checkpoint_name[1024];
 
 // ** API Functions, Types, and Variables ** //
 
@@ -72,3 +82,5 @@ extern io_partition * g_io_partitions;
 
 static void io_lp_serialize (tw_lp * lp, void * buffer);
 static void io_lp_deserialize (tw_lp * lp, void * buffer);
+
+#endif
