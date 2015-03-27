@@ -7,6 +7,7 @@
 #include <assert.h>
 #include "mpi.h"
 #include "io.h"
+#include "io-config.h"
 
 // Null Initializations
 io_partition * g_io_partitions;
@@ -16,6 +17,8 @@ int g_io_number_of_files = 0;
 int g_io_number_of_partitions = 0;
 int g_io_partitions_on_rank = 0;
 io_lptype * g_io_lp_types = NULL;
+io_load_type g_io_load_at = NONE;
+char g_io_checkpoint_name[1024];
 
 // local init flag (space has been allocated)
 int l_init_flag = 0;
