@@ -32,6 +32,8 @@ typedef enum io_load_e io_load_type;
 extern io_load_type g_io_load_at;
 extern char g_io_checkpoint_name[1024];
 
+extern int g_io_events_buffered_per_rank;
+
 // ** API Functions, Types, and Variables ** //
 
 void io_opts();
@@ -64,8 +66,9 @@ typedef struct {
 	int part;
 	int file;
 	int offset;
-	int size;
-	int data_count;
+	int lp_count;
+	int lp_size;
+	int ev_count;
 } io_partition;
 
 typedef struct {
@@ -83,4 +86,6 @@ extern io_partition * g_io_partitions;
 static void io_lp_serialize (tw_lp * lp, void * buffer);
 static void io_lp_deserialize (tw_lp * lp, void * buffer);
 
+extern tw_eventq g_io_buffered_events;
+extern tw_eventq g_io_free_events;
 #endif
