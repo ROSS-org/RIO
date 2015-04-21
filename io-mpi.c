@@ -235,7 +235,14 @@ void io_load_checkpoint(char * master_filename) {
         for (i = 0; i < my_partitions[i].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event * e = b;
-            e->src_pe = g_tw_pe[0];
+            //undo pointer to GID conversion
+            if (g_tw_mapping == LINEAR) {
+                e->src_lp = g_tw_lp[((tw_lpid)e->src_lp) - g_tw_lp_offset];
+            } else if (g_tw_mapping == CUSTOM) {
+                e->src_lp = g_tw_custom_lp_global_to_local_map(e->src_lp);
+            } else {
+                tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
+            }
             tw_event_send(e);
             b += g_tw_event_msg_sz;
         }
@@ -279,6 +286,13 @@ void io_store_checkpoint(char * master_filename) {
         int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
         ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[i]->cur_state, b + lp_size, g_tw_lp[i]);
         b += lp_size + model_sizes[i];
+    }
+
+    // Events need src_lp pointer to be converted to GID
+    tw_event *current = g_io_buffered_events.head;
+    for (i = 0; i < g_io_buffered_events.size; i++) {
+        current->src_lp = current->src_lp->gid;
+        current = current->next;
     }
 
     // Events are block allocated
