@@ -232,6 +232,7 @@ void io_load_checkpoint(char * master_filename) {
             ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[l]->cur_state, b + lp_size, g_tw_lp[l]);
             b += lp_size + model_sizes[l];
         }
+        assert(my_partitions[i].ev_count <= g_io_free_events.size);
         for (i = 0; i < my_partitions[i].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event * e = b;
@@ -239,16 +240,28 @@ void io_load_checkpoint(char * master_filename) {
             if (g_tw_mapping == LINEAR) {
                 e->src_lp = g_tw_lp[((tw_lpid)e->src_lp) - g_tw_lp_offset];
             } else if (g_tw_mapping == CUSTOM) {
-                e->src_lp = g_tw_custom_lp_global_to_local_map(e->src_lp);
+                e->src_lp = g_tw_custom_lp_global_to_local_map((tw_lpid)e->src_lp);
             } else {
                 tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
             }
-            tw_event_send(e);
+            // buffer event to send after initialization
+            tw_event *ev = tw_eventq_pop(&g_io_free_events);
+            memcpy(ev, e, g_tw_event_msg_sz);
+            tw_eventq_push(&g_io_buffered_events, ev);
             b += g_tw_event_msg_sz;
         }
     }
 
     return;
+}
+
+void io_load_events() {
+    int i;
+    for (i = 0; i < g_io_buffered_events.size; i++) {
+        tw_event *e = tw_eventq_pop(&g_io_buffered_events);
+        tw_event_send(e);
+        tw_eventq_push(&g_io_free_events, e);
+    }
 }
 
 void io_store_checkpoint(char * master_filename) {
