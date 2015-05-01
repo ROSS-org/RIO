@@ -232,8 +232,8 @@ void io_load_checkpoint(char * master_filename) {
             ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[l]->cur_state, b + lp_size, g_tw_lp[l]);
             b += lp_size + model_sizes[l];
         }
-        assert(my_partitions[i].ev_count <= g_io_free_events.size);
-        for (i = 0; i < my_partitions[i].ev_count; i++) {
+        assert(my_partitions[p].ev_count <= g_io_free_events.size);
+        for (i = 0; i < my_partitions[p].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event * e = b;
             //undo pointer to GID conversion
