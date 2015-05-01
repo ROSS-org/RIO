@@ -310,7 +310,7 @@ void io_store_checkpoint(char * master_filename) {
 
     // Events are block allocated
     // tail here should have been head of free queue
-    memcpy(buffer, &g_io_buffered_events.head, sum_event_size);
+    memcpy(b, &g_io_buffered_events.head, sum_event_size);
 
     g_io_partitions_on_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
