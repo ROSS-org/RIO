@@ -82,10 +82,20 @@ typedef struct {
 #endif
 } io_lp_store;
 
+typedef struct {
+	tw_bf cv;
+	tw_lpid dest_lp;
+	tw_lpid src_lp;
+	tw_peid send_pe;
+	// NOTE: not storing tw_memory or tw_out
+} io_event_store;
+
 extern io_partition * g_io_partitions;
 
 static void io_lp_serialize (tw_lp * lp, void * buffer);
 static void io_lp_deserialize (tw_lp * lp, void * buffer);
+static void io_event_serialize (tw_event * e, void * buffer);
+static void io_event_deserialize (tw_event * e, void * buffer);
 
 extern tw_eventq g_io_buffered_events;
 extern tw_eventq g_io_free_events;

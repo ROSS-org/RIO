@@ -315,6 +315,7 @@ void io_store_checkpoint(char * master_filename) {
     for (i = 0; i < event_count; i++) {
         tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
         ev->src_lp = ev->src_lp->gid;
+        // ev->recv_ts -= g_tw_ts_end;
         memcpy(b, ev, g_tw_event_msg_sz);
         tw_eventq_push(&g_io_free_events, ev);
         b += g_tw_event_msg_sz;
@@ -460,4 +461,36 @@ static void io_lp_deserialize (tw_lp *lp, void *buffer) {
         lp->rng->tw_normal_flipflop = tmp.tw_normal_flipflop;
 #endif
     }
+}
+
+static void io_event_serialize (tw_event *e, void *buffer) {
+    int i;
+
+    io_event_store tmp;
+
+    memcpy(&(tmp.cv), &(e->cv), sizeof(tw_bf));
+    tmp.dest_lp = e->dest_lp->gid;
+    tmp.src_lp = e->src_lp->gid;
+    tmp.send_pe = e->send_pe;
+
+    memcpy(buffer, &tmp, sizeof(io_event_store));
+}
+
+static void io_event_deserialize (tw_event *e, void *buffer) {
+    int i;
+
+    io_event_store tmp;
+    memcpy(&tmp, buffer, sizeof(io_event_store));
+
+    memcpy(&(e->cv), &(tmp.cv), sizeof(tw_bf));
+    e->dest_lp = tmp.dest_lp;
+    //undo pointer to GID conversion
+    if (g_tw_mapping == LINEAR) {
+        e->src_lp = g_tw_lp[((tw_lpid)tmp.src_lp) - g_tw_lp_offset];
+    } else if (g_tw_mapping == CUSTOM) {
+        e->src_lp = g_tw_custom_lp_global_to_local_map((tw_lpid)tmp.src_lp);
+    } else {
+        tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
+    }
+    e->send_pe = tmp.send_pe;
 }
