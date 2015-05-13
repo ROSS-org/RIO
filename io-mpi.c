@@ -255,12 +255,21 @@ void io_load_checkpoint(char * master_filename) {
     return;
 }
 
-void io_load_events() {
+void io_load_events(tw_pe * me) {
     int i;
-    for (i = 0; i < g_io_buffered_events.size; i++) {
+    int event_count = g_io_buffered_events.size;
+    for (i = 0; i < event_count; i++) {
+        me->cur_event = me->abort_event;
+        me->cur_event->caused_by_me = NULL;
+
+        printf("bufferedq size: %d, freeq size: %d\n", g_io_buffered_events.size, g_io_free_events.size);
         tw_event *e = tw_eventq_pop(&g_io_buffered_events);
         tw_event_send(e);
         tw_eventq_push(&g_io_free_events, e);
+
+        if (me->cev_abort) {
+            tw_error(TW_LOC, "ran out of events during io_load_events");
+        }
     }
 }
 

@@ -44,7 +44,7 @@ void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
 
 void io_load_checkpoint(char * master_filename);
-void io_load_events();
+void io_load_events(tw_pe * me);
 void io_store_checkpoint(char * master_filename);
 
 // LP type map and function struct
