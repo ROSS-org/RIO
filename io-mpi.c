@@ -235,19 +235,19 @@ void io_load_checkpoint(char * master_filename) {
         assert(my_partitions[p].ev_count <= g_io_free_events.size);
         for (i = 0; i < my_partitions[p].ev_count; i++) {
             // SEND THESE EVENTS
-            tw_event * e = b;
+            tw_event *ev = tw_eventq_pop(&g_io_free_events);
+            memcpy(ev, b, g_tw_event_msg_sz);
             //undo pointer to GID conversion
             if (g_tw_mapping == LINEAR) {
-                e->src_lp = g_tw_lp[((tw_lpid)e->src_lp) - g_tw_lp_offset];
+                ev->src_lp = g_tw_lp[((tw_lpid)ev->src_lp) - g_tw_lp_offset];
             } else if (g_tw_mapping == CUSTOM) {
-                e->src_lp = g_tw_custom_lp_global_to_local_map((tw_lpid)e->src_lp);
+                ev->src_lp = g_tw_custom_lp_global_to_local_map((tw_lpid)ev->src_lp);
             } else {
                 tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
             }
             // buffer event to send after initialization
-            tw_event *ev = tw_eventq_pop(&g_io_free_events);
-            memcpy(ev, e, g_tw_event_msg_sz);
             tw_eventq_push(&g_io_buffered_events, ev);
+            printf("Buffering event with recv_ts %f\n", ev->recv_ts);
             b += g_tw_event_msg_sz;
         }
     }
@@ -287,7 +287,8 @@ void io_store_checkpoint(char * master_filename) {
     }
 
     // Events
-    int sum_event_size = g_io_buffered_events.size * g_tw_event_msg_sz;
+    int event_count = g_io_buffered_events.size;
+    int sum_event_size = event_count * g_tw_event_msg_sz;
 
     int sum_lp_size = g_tw_nlp * lp_size;
     int sum_size = sum_lp_size + sum_model_size + sum_event_size;
@@ -302,15 +303,13 @@ void io_store_checkpoint(char * master_filename) {
     }
 
     // Events need src_lp pointer to be converted to GID
-    tw_event *current = g_io_buffered_events.head;
-    for (i = 0; i < g_io_buffered_events.size; i++) {
-        current->src_lp = current->src_lp->gid;
-        current = current->next;
+    for (i = 0; i < event_count; i++) {
+        tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
+        ev->src_lp = ev->src_lp->gid;
+        memcpy(b, ev, g_tw_event_msg_sz);
+        tw_eventq_push(&g_io_free_events, ev);
+        b += g_tw_event_msg_sz;
     }
-
-    // Events are block allocated
-    // tail here should have been head of free queue
-    memcpy(b, &g_io_buffered_events.head, sum_event_size);
 
     g_io_partitions_on_rank = g_io_number_of_partitions / number_of_mpitasks;
     int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
@@ -347,7 +346,7 @@ void io_store_checkpoint(char * master_filename) {
         my_partitions[i].offset = offset;
         my_partitions[i].lp_count = g_tw_nlp / g_io_partitions_on_rank;
         my_partitions[i].lp_size = sum_lp_size + sum_model_size;
-        my_partitions[i].ev_count = g_io_buffered_events.size;
+        my_partitions[i].ev_count = event_count;
     }
 
     MPI_Datatype MPI_IO_PART;
