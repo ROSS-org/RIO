@@ -243,7 +243,6 @@ void io_load_checkpoint(char * master_filename) {
             b += g_tw_msg_sz;
             // buffer event to send after initialization
             tw_eventq_push(&g_io_buffered_events, ev);
-            printf("Buffering event with recv_ts %f\n", ev->recv_ts);
         }
     }
 
@@ -257,7 +256,6 @@ void io_load_events(tw_pe * me) {
         me->cur_event = me->abort_event;
         me->cur_event->caused_by_me = NULL;
 
-        printf("bufferedq size: %d, freeq size: %d\n", g_io_buffered_events.size, g_io_free_events.size);
         tw_event *e = tw_eventq_pop(&g_io_buffered_events);
         tw_event_send(e);
         tw_eventq_push(&g_io_free_events, e);
@@ -473,6 +471,7 @@ static void io_event_serialize (tw_event *e, void *buffer) {
     tmp.recv_ts = e->recv_ts;
 
     memcpy(buffer, &tmp, sizeof(io_event_store));
+    printf("Storing event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
 }
 
 static void io_event_deserialize (tw_event *e, void *buffer) {
@@ -492,4 +491,5 @@ static void io_event_deserialize (tw_event *e, void *buffer) {
         tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
     }
     e->recv_ts = tmp.recv_ts;
+    printf("Loading event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
 }
