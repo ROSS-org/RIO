@@ -295,15 +295,18 @@ void io_store_checkpoint(char * master_filename) {
         sum_model_size += model_sizes[i];
     }
 
-    // Events
+    // Event Metadata
     int event_count = g_io_buffered_events.size;
     int sum_event_size = event_count * g_tw_event_msg_sz;
 
     int sum_lp_size = g_tw_nlp * lp_size;
     int sum_size = sum_lp_size + sum_model_size + sum_event_size;
 
+    // ** START Serialize **
     char buffer[sum_size];
     void * b;
+
+    // LPs
     for (i = 0, b = buffer; i < g_tw_nlp; i++) {
         io_lp_serialize(g_tw_lp[i], b);
         int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
@@ -311,7 +314,7 @@ void io_store_checkpoint(char * master_filename) {
         b += lp_size + model_sizes[i];
     }
 
-    // Events need src_lp pointer to be converted to GID
+    // Events
     for (i = 0; i < event_count; i++) {
         tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
         ev->src_lp = ev->src_lp->gid;
