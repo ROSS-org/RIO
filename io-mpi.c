@@ -237,6 +237,7 @@ void io_load_checkpoint(char * master_filename) {
             // SEND THESE EVENTS
             tw_event *ev = tw_eventq_pop(&g_io_free_events);
             io_event_deserialize(ev, b);
+            b += sizeof(io_event_store);
             void * msg = tw_event_data(ev);
             memcpy(msg, b, g_tw_msg_sz);
             b += g_tw_msg_sz;
@@ -312,6 +313,7 @@ void io_store_checkpoint(char * master_filename) {
     for (i = 0; i < event_count; i++) {
         tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
         io_event_serialize(ev, b);
+        b += sizeof(io_event_store);
         void * msg = tw_event_data(ev);
         memcpy(b, msg, g_tw_msg_sz);
         tw_eventq_push(&g_io_free_events, ev);
