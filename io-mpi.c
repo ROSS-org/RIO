@@ -472,7 +472,7 @@ static void io_event_serialize (tw_event *e, void *buffer) {
     io_event_store tmp;
 
     memcpy(&(tmp.cv), &(e->cv), sizeof(tw_bf));
-    tmp.dest_lp = e->dest_lp->gid;
+    tmp.dest_lp = e->dest_lp; // dest_lp is gid
     tmp.src_lp = e->src_lp->gid;
     tmp.send_pe = e->send_pe;
 
