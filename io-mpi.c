@@ -221,8 +221,6 @@ void io_load_checkpoint(char * master_filename) {
 
     MPI_File_close(&fh);
 
-    tw_eventq load_events;
-
     // Load Data
     int p;
     int l = 0;
