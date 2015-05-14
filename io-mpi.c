@@ -201,7 +201,7 @@ void io_load_checkpoint(char * master_filename) {
     int partitions_size = 0;
     int partitions_events = 0;
     for (i = 0; i < g_io_partitions_on_rank; i++) {
-        partitions_size += my_partitions[i].lp_size + (my_partitions[i].ev_count *  g_tw_event_msg_sz);
+        partitions_size += my_partitions[i].lp_size + (my_partitions[i].ev_count * (sizeof(io_event_store) + g_tw_msg_sz));
         partitions_events += my_partitions[i].ev_count;
     }
     char buffer[partitions_size];
@@ -215,8 +215,8 @@ void io_load_checkpoint(char * master_filename) {
     for (i = 0; i < g_io_partitions_on_rank; i++){
         offset = (long long) my_partitions[i].offset;
         MPI_File_seek(fh, offset, MPI_SEEK_SET);
-        MPI_File_read(fh, b, my_partitions[i].lp_size + (partitions_events * g_tw_event_msg_sz), MPI_BYTE, &status);
-        b += my_partitions[i].lp_size + (partitions_events * g_tw_event_msg_sz);
+        MPI_File_read(fh, b, my_partitions[i].lp_size + (partitions_events * (sizeof(io_event_store) + g_tw_msg_sz)), MPI_BYTE, &status);
+        b += my_partitions[i].lp_size + (partitions_events * (sizeof(io_event_store) + g_tw_msg_sz));
     }
 
     MPI_File_close(&fh);
