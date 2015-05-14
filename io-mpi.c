@@ -236,19 +236,13 @@ void io_load_checkpoint(char * master_filename) {
         for (i = 0; i < my_partitions[p].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event *ev = tw_eventq_pop(&g_io_free_events);
-            memcpy(ev, b, g_tw_event_msg_sz);
-            //undo pointer to GID conversion
-            if (g_tw_mapping == LINEAR) {
-                ev->src_lp = g_tw_lp[((tw_lpid)ev->src_lp) - g_tw_lp_offset];
-            } else if (g_tw_mapping == CUSTOM) {
-                ev->src_lp = g_tw_custom_lp_global_to_local_map((tw_lpid)ev->src_lp);
-            } else {
-                tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
-            }
+            io_event_deserialize(ev, b);
+            void * msg = tw_event_data(ev);
+            memcpy(msg, b, g_tw_msg_sz);
+            b += g_tw_msg_sz;
             // buffer event to send after initialization
             tw_eventq_push(&g_io_buffered_events, ev);
             printf("Buffering event with recv_ts %f\n", ev->recv_ts);
-            b += g_tw_event_msg_sz;
         }
     }
 
