@@ -297,7 +297,7 @@ void io_store_checkpoint(char * master_filename) {
 
     // Event Metadata
     int event_count = g_io_buffered_events.size;
-    int sum_event_size = event_count * g_tw_event_msg_sz;
+    int sum_event_size = event_count * (g_tw_msg_sz + sizeof(io_event_store));
 
     int sum_lp_size = g_tw_nlp * lp_size;
     int sum_size = sum_lp_size + sum_model_size + sum_event_size;
@@ -317,11 +317,11 @@ void io_store_checkpoint(char * master_filename) {
     // Events
     for (i = 0; i < event_count; i++) {
         tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
-        ev->src_lp = ev->src_lp->gid;
-        // ev->recv_ts -= g_tw_ts_end;
-        memcpy(b, ev, g_tw_event_msg_sz);
+        io_event_serialize(ev, b);
+        void * msg = tw_event_data(ev);
+        memcpy(b, msg, g_tw_msg_sz);
         tw_eventq_push(&g_io_free_events, ev);
-        b += g_tw_event_msg_sz;
+        b += g_tw_msg_sz;
     }
 
     g_io_partitions_on_rank = g_io_number_of_partitions / number_of_mpitasks;
