@@ -257,8 +257,13 @@ void io_load_events(tw_pe * me) {
         me->cur_event->caused_by_me = NULL;
 
         tw_event *e = tw_eventq_pop(&g_io_buffered_events);
-        tw_event_send(e);
+        tw_event *n = tw_event_new(e->dest_lp, e->recv_ts, e->src_lp);
+        void *emsg = tw_event_data(e);
+        void *nmsg = tw_event_data(n);
+        memcpy(&(n->cv), &(e->cv), sizeof(tw_bf));
+        memcpy(nmsg, emsg, g_tw_msg_sz);
         tw_eventq_push(&g_io_free_events, e);
+        tw_event_send(n);
 
         if (me->cev_abort) {
             tw_error(TW_LOC, "ran out of events during io_load_events");
