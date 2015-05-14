@@ -474,6 +474,7 @@ static void io_event_serialize (tw_event *e, void *buffer) {
     memcpy(&(tmp.cv), &(e->cv), sizeof(tw_bf));
     tmp.dest_lp = e->dest_lp; // dest_lp is gid
     tmp.src_lp = e->src_lp->gid;
+    tmp.recv_ts = e->recv_ts;
 
     memcpy(buffer, &tmp, sizeof(io_event_store));
 }
@@ -494,4 +495,5 @@ static void io_event_deserialize (tw_event *e, void *buffer) {
     } else {
         tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
     }
+    e->recv_ts = tmp.recv_ts;
 }

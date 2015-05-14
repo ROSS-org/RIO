@@ -86,6 +86,7 @@ typedef struct {
 	tw_bf cv;
 	tw_lpid dest_lp;
 	tw_lpid src_lp;
+	tw_stime recv_ts;
 	// NOTE: not storing tw_memory or tw_out
 } io_event_store;
 
