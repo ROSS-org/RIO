@@ -250,6 +250,8 @@ void io_load_checkpoint(char * master_filename) {
 void io_load_events(tw_pe * me) {
     int i;
     int event_count = g_io_buffered_events.size;
+    tw_stime original_lookahead = g_tw_lookahead;
+    g_tw_lookahead = 0.000001;
     for (i = 0; i < event_count; i++) {
         me->cur_event = me->abort_event;
         me->cur_event->caused_by_me = NULL;
@@ -267,6 +269,7 @@ void io_load_events(tw_pe * me) {
             tw_error(TW_LOC, "ran out of events during io_load_events");
         }
     }
+    g_tw_lookahead = original_lookahead;
 }
 
 void io_store_checkpoint(char * master_filename) {
