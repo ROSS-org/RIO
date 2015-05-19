@@ -7,19 +7,19 @@ These data structures are organized into partitions that can be read by MPI task
 This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 **ALERT:**
-This system has only been tested with the [gonsie/SR](http://github.com/gonsie/SR) fork of ROSS. 
-While ROSSIO is being developed as an independent module, there are some modifications that will need to be implemented within the ROSS core.
-Note that while ROSSIO is under active development it **may not** function with regular ROSS.
+This system has only been tested with the [ROSS:io branch](http://github.com/carothers/ROSS/tree/io).
+While RIO is being developed as an independent module, there are some modifications that will need to be implemented within the ROSS core.
+Note that while RIO is under active development it **may not** function with regular ROSS:master.
 
 ## Example
 
 A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/phold-io).
-This model is being actively developed along side ROSSIO and will reflect the current API.
+This model is being actively developed along side RIO and will reflect the current API.
 
 
 ## API
 
-*Note: please see the [wiki](http://github.com/gonsie/ROSSIO/wiki) for more detailed documentation.*
+*Note: please see the [wiki](http://github.com/gonsie/RIO/wiki) for more detailed documentation.*
 
 ### User Implemented Functions
 
@@ -33,7 +33,7 @@ This function must be implemented if LPs in the system have a variable size.
 This function must be implemented if there are multiple LP types in the system.
 
 ROSS defines LP types with an array of structs function pointers (one tw_lptype struct per LP type).
-Similarly, ROSSIO will use an array of io_lptype structs, which include function pointers to the serialize and deserialize functions.
+Similarly, RIO will use an array of io_lptype structs, which include function pointers to the serialize and deserialize functions.
 Here is the code with the relevant type definitions:
 
 ```
@@ -61,9 +61,9 @@ tw_typemap_f g_tw_lp_typemap;
 
 #### Initializing the IO system
 
-ROSSIO can be set up from the command line, or through an io_init function.
+RIO can be set up from the command line, or through an io_init function.
 In order to support the command-line options, a call to `io_opts()` must be made before the call `tw_init()` in main.
-Otherwise, ROSSIO can be initialized with `io_init(int files, int partitions)`.
+Otherwise, RIO can be initialized with `io_init(int files, int partitions)`.
 
 #### Checkpointing functions
 
@@ -85,12 +85,12 @@ Otherwise, ROSSIO can be initialized with `io_init(int files, int partitions)`.
 
 ### Read Me File
 
-This is a human readable file that will **not** be parsed by the ROSSIO system.
+This is a human readable file that will **not** be parsed by the RIO system.
 This file contains information about the checkpoint files, including:
 
 - How many files are in the checkpoint
 - The name of the checkpoint
-- The version of ROSS and ROSSIO (in git hashes)
+- The version of ROSS and RIO (in git hashes)
 - Date the files were written
 - Other details about the ROSS config and model
 
@@ -106,7 +106,8 @@ The first block of metadata contians blocks of the following information on a pa
 - Partition file
 - Partition offset (within file)
 - Partition size
-- Data item count
+- LP count
+- Event count
 
 The second block contains model size arrays.
 For the LPs in each partition, the LP size is enumerated in an array.
