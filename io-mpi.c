@@ -353,7 +353,7 @@ void io_store_checkpoint(char * master_filename) {
 
     // each rank fills in its local partition data
     io_partition my_partitions[g_io_partitions_on_rank];
-    for (int i = 0; i < g_io_partitions_on_rank; ++i) {
+    for (i = 0; i < g_io_partitions_on_rank; ++i) {
         my_partitions[i].part = (mpi_rank * g_io_partitions_on_rank) + i;
         my_partitions[i].file = file_number;
         my_partitions[i].offset = offset;
