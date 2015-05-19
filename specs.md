@@ -7,7 +7,7 @@ These data structures are organized into partitions that can be read by MPI task
 This system is derived from [phastaIO](http://github.com/fuj/phastaIO).
 
 **ALERT:**
-This system has only been tested with the [ROSS:io branch](http://github.com/carothers/ROSS/tree/io).
+This system has only been tested with the [ROSS:io branch](http://github.com/carothersc/ROSS/tree/io).
 While RIO is being developed as an independent module, there are some modifications that will need to be implemented within the ROSS core.
 Note that while RIO is under active development it **may not** function with regular ROSS:master.
 
