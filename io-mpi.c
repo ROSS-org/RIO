@@ -284,7 +284,7 @@ void io_store_checkpoint(char * master_filename) {
     // Gather LP size data
     int lp_size = sizeof(io_lp_store);
     size_t model_sizes[g_tw_nlp];
-    int sum_model_size;
+    int sum_model_size = 0;
 
     // always do this loop to allow for interleaved LP types in g_tw_lp
     // TODO: add short cut for one-type, non-dynamic models?
