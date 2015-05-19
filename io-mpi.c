@@ -118,7 +118,7 @@ void process_metadata(char * data_block, int mpi_rank) {
     for (i = 0; i < g_io_partitions_on_rank; i++) {
         count = sscanf(data_block, "%d %d %d %d %d %d%n",
             &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset,
-            &g_io_partitions[i].lp_size, &g_io_partitions[i].lp_count, &g_io_partitions[i].ev_count,
+            &g_io_partitions[i].size, &g_io_partitions[i].lp_count, &g_io_partitions[i].ev_count,
             &offset);
         assert(count == 7 && "Error: could not read correct number of ints during partition_metadata processing\n");
         assert(partition_number == (mpi_rank * g_io_partitions_on_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
@@ -184,9 +184,9 @@ void io_load_checkpoint(char * master_filename) {
     MPI_File_close(&fh);
 
     for (i = 0; i < g_io_partitions_on_rank; i++) {
-        printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tlp size %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+        printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
             my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-            my_partitions[i].lp_size, my_partitions[i].lp_count, my_partitions[i].ev_count);
+            my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
     }
 
     // Now data files
@@ -200,7 +200,7 @@ void io_load_checkpoint(char * master_filename) {
     int lp_size = sizeof(io_lp_store);
     int partitions_size = 0;
     for (i = 0; i < g_io_partitions_on_rank; i++) {
-        partitions_size += my_partitions[i].lp_size + (my_partitions[i].ev_count * (sizeof(io_event_store) + g_tw_msg_sz));
+        partitions_size += my_partitions[i].size;
     }
     char buffer[partitions_size];
     void * b = buffer;
@@ -213,8 +213,8 @@ void io_load_checkpoint(char * master_filename) {
     for (i = 0; i < g_io_partitions_on_rank; i++){
         offset = (long long) my_partitions[i].offset;
         MPI_File_seek(fh, offset, MPI_SEEK_SET);
-        MPI_File_read(fh, b, my_partitions[i].lp_size + (my_partitions[i].ev_count * (sizeof(io_event_store) + g_tw_msg_sz)), MPI_BYTE, &status);
-        b += my_partitions[i].lp_size + (my_partitions[i].ev_count * (sizeof(io_event_store) + g_tw_msg_sz));
+        MPI_File_read(fh, b, my_partitions[i].size, MPI_BYTE, &status);
+        b += my_partitions[i].size;
     }
 
     MPI_File_close(&fh);
@@ -355,8 +355,8 @@ void io_store_checkpoint(char * master_filename) {
         my_partitions[i].part = (mpi_rank * g_io_partitions_on_rank) + i;
         my_partitions[i].file = file_number;
         my_partitions[i].offset = offset;
+        my_partitions[i].size = sum_size;
         my_partitions[i].lp_count = g_tw_nlp / g_io_partitions_on_rank;
-        my_partitions[i].lp_size = sum_lp_size + sum_model_size;
         my_partitions[i].ev_count = event_count;
     }
 
@@ -365,9 +365,9 @@ void io_store_checkpoint(char * master_filename) {
     MPI_Type_commit(&MPI_IO_PART);
 
     for (i = 0; i < g_io_partitions_on_rank; i++) {
-        printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tlp size %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+        printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
             my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-            my_partitions[i].lp_size, my_partitions[i].lp_count, my_partitions[i].ev_count);
+            my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
     }
     int psize;
     MPI_Type_size(MPI_IO_PART, &psize);

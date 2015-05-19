@@ -67,8 +67,8 @@ typedef struct {
 	int part;
 	int file;
 	int offset;
+	int size;
 	int lp_count;
-	int lp_size;
 	int ev_count;
 } io_partition;
 
