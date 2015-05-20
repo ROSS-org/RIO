@@ -1,1 +1,1 @@
-#define ROSSIO_VERSION "@GIT_SHA1_IO@"
+#define RIO_VERSION "@GIT_SHA1_IO@"

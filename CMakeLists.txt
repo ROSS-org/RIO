@@ -1,12 +1,12 @@
-PROJECT(ROSSIO)
+PROJECT(RIO)
 
-SET(rossio_srcs io.h)
+SET(rio_srcs io.h)
 
 OPTION(USE_MPI_IO "Use MPI for I/O operations? Defaults to POSIX" ON)
 IF(USE_MPI_IO)
-	SET(rossio_srcs ${rossio_srcs} io-mpi.c)
+	SET(rio_srcs ${rio_srcs} io-mpi.c)
 ELSE(USE_MPI_IO)
-	SET(rossio_srcs ${rossio_srcs} io-posix.c)
+	SET(rio_srcs ${rio_srcs} io-posix.c)
 ENDIF(USE_MPI_IO)
 
 ## Print RIO Git Hash
@@ -17,12 +17,12 @@ GET_GIT_HEAD_REVISION(GIT_REFSPEC_IO GIT_SHA1_IO)
 ## Build Configuration File
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/io-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/io-config.h @ONLY)
-SET(rossio_srcs ${rossio_srcs} io-config.h)
+SET(rio_srcs ${rio_srcs} io-config.h)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/io-config.h.in PROPERTIES GENERATED FALSE)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/io-config.h PROPERTIES GENERATED TRUE)
 
-ADD_LIBRARY(ROSSIO ${rossio_srcs})
+ADD_LIBRARY(RIO ${rio_srcs})
 
 # find ross.h
 INCLUDE_DIRECTORIES(${ROSS_SOURCE_DIR} ${ROSS_BINARY_DIR})
-TARGET_LINK_LIBRARIES(ROSSIO ROSS)
+TARGET_LINK_LIBRARIES(RIO ROSS)

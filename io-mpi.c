@@ -28,7 +28,7 @@ int l_init_flag = 0;
 
 // Command Line Options
 const tw_optdef io_opt[] = {
-    TWOPT_GROUP("ROSSIO"),
+    TWOPT_GROUP("RIO"),
     TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
     TWOPT_UINT("io-parts", g_io_number_of_partitions, "io partitions"),
     TWOPT_UINT("io-ppr", g_io_partitions_on_rank, "io partitions per rank"),
@@ -405,8 +405,8 @@ void io_store_checkpoint(char * master_filename) {
 #ifdef ROSS_VERSION
         fprintf(file, "ROSS Version:\t%s\n", ROSS_VERSION);
 #endif
-#ifdef ROSSIO_VERSION
-        fprintf(file, "RIO Version:\t%s\n", ROSSIO_VERSION);
+#ifdef RIO_VERSION
+        fprintf(file, "RIO Version:\t%s\n", RIO_VERSION);
 #endif
         fprintf(file, "MODEL Version:\t%s\n", model_version);
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
