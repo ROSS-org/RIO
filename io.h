@@ -92,10 +92,10 @@ typedef struct {
 
 extern io_partition * g_io_partitions;
 
-static void io_lp_serialize (tw_lp * lp, void * buffer);
-static void io_lp_deserialize (tw_lp * lp, void * buffer);
-static void io_event_serialize (tw_event * e, void * buffer);
-static void io_event_deserialize (tw_event * e, void * buffer);
+static size_t io_lp_serialize (tw_lp * lp, void * buffer);
+static size_t io_lp_deserialize (tw_lp * lp, void * buffer);
+static size_t io_event_serialize (tw_event * e, void * buffer);
+static size_t io_event_deserialize (tw_event * e, void * buffer);
 
 extern tw_eventq g_io_buffered_events;
 extern tw_eventq g_io_free_events;

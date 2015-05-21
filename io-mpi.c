@@ -224,16 +224,15 @@ void io_load_checkpoint(char * master_filename) {
     int l = 0;
     for (p = 0, b = buffer; p < g_io_partitions_on_rank; p++) {
         for (i = 0; i < my_partitions[p].lp_count; i++, l++) {
-            io_lp_deserialize(g_tw_lp[l], b);
-            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[l]->cur_state, b + lp_size, g_tw_lp[l]);
-            b += lp_size + model_sizes[l];
+            b += io_lp_deserialize(g_tw_lp[l], b);
+            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[l]->cur_state, b, g_tw_lp[l]);
+            b += model_sizes[l];
         }
         assert(my_partitions[p].ev_count <= g_io_free_events.size);
         for (i = 0; i < my_partitions[p].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event *ev = tw_eventq_pop(&g_io_free_events);
-            io_event_deserialize(ev, b);
-            b += sizeof(io_event_store);
+            b += io_event_deserialize(ev, b);
             void * msg = tw_event_data(ev);
             memcpy(msg, b, g_tw_msg_sz);
             b += g_tw_msg_sz;
@@ -305,17 +304,16 @@ void io_store_checkpoint(char * master_filename) {
 
     // LPs
     for (i = 0, b = buffer; i < g_tw_nlp; i++) {
-        io_lp_serialize(g_tw_lp[i], b);
+        b += io_lp_serialize(g_tw_lp[i], b);
         int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
-        ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[i]->cur_state, b + lp_size, g_tw_lp[i]);
-        b += lp_size + model_sizes[i];
+        ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[i]->cur_state, b, g_tw_lp[i]);
+        b += model_sizes[i];
     }
 
     // Events
     for (i = 0; i < event_count; i++) {
         tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
-        io_event_serialize(ev, b);
-        b += sizeof(io_event_store);
+        b += io_event_serialize(ev, b);
         void * msg = tw_event_data(ev);
         memcpy(b, msg, g_tw_msg_sz);
         tw_eventq_push(&g_io_free_events, ev);
@@ -420,7 +418,7 @@ void io_store_checkpoint(char * master_filename) {
     }
 }
 
-static void io_lp_serialize (tw_lp *lp, void *buffer) {
+static size_t io_lp_serialize (tw_lp *lp, void *buffer) {
     int i, j;
 
     io_lp_store tmp;
@@ -440,9 +438,10 @@ static void io_lp_serialize (tw_lp *lp, void *buffer) {
     }
 
     memcpy(buffer, &tmp, sizeof(io_lp_store));
+    return sizeof(io_lp_store);
 }
 
-static void io_lp_deserialize (tw_lp *lp, void *buffer) {
+static size_t io_lp_deserialize (tw_lp *lp, void *buffer) {
     int i, j;
 
     io_lp_store tmp;
@@ -462,9 +461,10 @@ static void io_lp_deserialize (tw_lp *lp, void *buffer) {
         lp->rng->tw_normal_flipflop = tmp.tw_normal_flipflop;
 #endif
     }
+    return sizeof(io_lp_store);
 }
 
-static void io_event_serialize (tw_event *e, void *buffer) {
+static size_t io_event_serialize (tw_event *e, void *buffer) {
     int i;
 
     io_event_store tmp;
@@ -476,9 +476,10 @@ static void io_event_serialize (tw_event *e, void *buffer) {
 
     memcpy(buffer, &tmp, sizeof(io_event_store));
     printf("Storing event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
+    return sizeof(io_event_store);
 }
 
-static void io_event_deserialize (tw_event *e, void *buffer) {
+static size_t io_event_deserialize (tw_event *e, void *buffer) {
     int i;
 
     io_event_store tmp;
@@ -496,4 +497,5 @@ static void io_event_deserialize (tw_event *e, void *buffer) {
     }
     e->recv_ts = tmp.recv_ts;
     printf("Loading event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
+    return sizeof(io_event_store);
 }
