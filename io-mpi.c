@@ -405,6 +405,7 @@ void io_store_checkpoint(char * master_filename) {
         time(&raw_time);
         fprintf(file, "Date Created:\t%s\n", ctime(&raw_time));
 #endif
+        fprintf(file, "## BUILD CONFIGURATION\n\n");
 #ifdef ROSS_VERSION
         fprintf(file, "ROSS Version:\t%s\n", ROSS_VERSION);
 #endif
@@ -420,6 +421,8 @@ void io_store_checkpoint(char * master_filename) {
 #else
         fprintf(file, "RAND_NORMAL\tOFF\n");
 #endif
+        fprintf(file, "\n## RUN TIME SETTINGS by GROUP:\n\n");
+        tw_opt_settings(file);
     }
 }
 
