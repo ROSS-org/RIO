@@ -144,7 +144,7 @@ void io_load_checkpoint(char * master_filename) {
 
     // Metadata datatype
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(6, MPI_INT, &MPI_IO_PART);
+    MPI_Type_contiguous(io_partition_field_count, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
     int partition_md_size;
     MPI_Type_size(MPI_IO_PART, &partition_md_size);
@@ -364,7 +364,7 @@ void io_store_checkpoint(char * master_filename) {
     }
 
     MPI_Datatype MPI_IO_PART;
-    MPI_Type_contiguous(6, MPI_INT, &MPI_IO_PART);
+    MPI_Type_contiguous(io_partition_field_count, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
 
     for (i = 0; i < g_io_partitions_on_rank; i++) {

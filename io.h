@@ -71,6 +71,7 @@ typedef struct {
 	int lp_count;
 	int ev_count;
 } io_partition;
+static int io_partition_field_count = 6;
 
 typedef struct {
 	tw_lpid gid;
