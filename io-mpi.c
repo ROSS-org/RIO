@@ -197,7 +197,6 @@ void io_load_checkpoint(char * master_filename) {
     // Read file
     MPI_Comm file_comm;
     int file_number = my_partitions[0].file;
-    int lp_size = sizeof(io_lp_store);
     int partitions_size = 0;
     for (i = 0; i < g_io_partitions_on_rank; i++) {
         partitions_size += my_partitions[i].size;
@@ -248,6 +247,8 @@ void io_load_events(tw_pe * me) {
     int i;
     int event_count = g_io_buffered_events.size;
     tw_stime original_lookahead = g_tw_lookahead;
+    //These messages arrive before the first conservative window
+    //checking for valid lookahead is unnecessary
     g_tw_lookahead = 0.000001;
     for (i = 0; i < event_count; i++) {
         me->cur_event = me->abort_event;
