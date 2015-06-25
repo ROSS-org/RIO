@@ -154,9 +154,7 @@ void io_load_checkpoint(char * master_filename) {
 
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-	MPI_File_seek(fh, offset, MPI_SEEK_SET);
-
-    MPI_File_read(fh, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+	MPI_File_read_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
 
     // error check
     int count_sum = 0;
@@ -174,9 +172,8 @@ void io_load_checkpoint(char * master_filename) {
     size_t model_sizes[g_tw_nlp];
     int index = 0;
     for (i = 0; i < g_io_partitions_on_rank; i++){
-        MPI_File_seek(fh, offset, MPI_SEEK_SET);
         int data_count = my_partitions[i].lp_count;
-        MPI_File_read(fh, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
         index += data_count;
         offset += (long long) data_count;
     }
@@ -211,8 +208,7 @@ void io_load_checkpoint(char * master_filename) {
     // FOR SOME REASON WE CAN'T DO A SINGLE READ OF MULTIPLE PARTITIONS
     for (i = 0; i < g_io_partitions_on_rank; i++){
         offset = (long long) my_partitions[i].offset;
-        MPI_File_seek(fh, offset, MPI_SEEK_SET);
-        MPI_File_read(fh, b, my_partitions[i].size, MPI_BYTE, &status);
+        MPI_File_read_at_all(fh, offset, b, my_partitions[i].size, MPI_BYTE, &status);
         b += my_partitions[i].size;
     }
 
@@ -347,10 +343,7 @@ void io_store_checkpoint(char * master_filename) {
     char filename[100];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
     MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-    MPI_File_seek(fh, offset, MPI_SEEK_SET);
-
-    MPI_File_write(fh, &buffer, sum_size, MPI_BYTE, &status);
-
+    MPI_File_write_at_all(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
     MPI_File_close(&fh);
 
     // each rank fills in its local partition data
@@ -380,19 +373,14 @@ void io_store_checkpoint(char * master_filename) {
     offset = (long long) sizeof(io_partition) * g_io_partitions_on_rank * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-    MPI_File_seek(fh, offset, MPI_SEEK_SET);
-
-    MPI_File_write(fh, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+    MPI_File_write_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
 
     // Write model size array
     offset = (long long) 0;
     contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
-    MPI_File_seek(fh, offset, MPI_SEEK_SET);
-
-    MPI_File_write(fh, model_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
-
+    MPI_File_write_at_all(fh, offset, model_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
     // WRITE READ ME
