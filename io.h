@@ -22,6 +22,9 @@ extern int g_io_number_of_files;
 // otherwise it can vary by rank (uneven load)
 extern int g_io_partitions_on_rank;
 
+// Register opts with ROSS
+extern const tw_optdef io_opts[5];
+
 enum io_load_e {
 	NONE,		// don't from checkpoint
 	PRE_INIT,	// load LPs then lp->init
@@ -36,7 +39,6 @@ extern int g_io_events_buffered_per_rank;
 
 // ** API Functions, Types, and Variables ** //
 
-void io_opts();
 void io_register_model_version(char *sha1);
 void io_init(int num_files, int num_partitions);
 void io_final();

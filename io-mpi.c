@@ -27,17 +27,13 @@ tw_eventq g_io_free_events;
 int l_init_flag = 0;
 
 // Command Line Options
-const tw_optdef io_opt[] = {
+const tw_optdef io_opts[] = {
     TWOPT_GROUP("RIO"),
     TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
     TWOPT_UINT("io-parts", g_io_number_of_partitions, "io partitions"),
     TWOPT_UINT("io-ppr", g_io_partitions_on_rank, "io partitions per rank"),
     TWOPT_END()
 };
-
-void io_opts () {
-    tw_opt_add(io_opt);
-}
 
 char model_version[41];
 
