@@ -13,7 +13,7 @@ Note that while RIO is under active development it **may not** function with reg
 
 ## Example
 
-A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/phold-io).
+A sample model can be seen at [gonsie/phold-io](http://github.com/gonsie/pholdio).
 This model is being actively developed along side RIO and will reflect the current API.
 
 
