@@ -33,6 +33,8 @@ typedef enum io_load_e io_load_type;
 extern io_load_type g_io_load_at;
 extern char g_io_checkpoint_name[1024];
 
+// Should be set in main, before call to io_init
+// Maximum number of events that will be scheduled past end time
 extern int g_io_events_buffered_per_rank;
 
 // Set by RIO in io_init
