@@ -102,5 +102,5 @@ static size_t io_event_deserialize (tw_event * e, void * buffer);
 // INLINE function for buffering events past end time
 extern tw_eventq g_io_buffered_events;
 extern tw_eventq g_io_free_events;
-extern inline tw_event * io_event_grab(tw_pe *pe);
+extern tw_event * io_event_grab(tw_pe *pe);
 #endif

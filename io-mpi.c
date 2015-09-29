@@ -41,7 +41,7 @@ void io_register_model_version (char *sha1) {
     strcpy(model_version, sha1);
 }
 
-inline tw_event * io_event_grab(tw_pe *pe) {
+tw_event * io_event_grab(tw_pe *pe) {
     if (!l_io_init_flag) {
       // the RIO system has not been initialized
       return pe->abort_event;
