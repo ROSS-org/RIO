@@ -37,6 +37,10 @@ extern char g_io_checkpoint_name[1024];
 
 extern int g_io_events_buffered_per_rank;
 
+// Set by RIO in io_init
+// Used to specify if RIO is activated and allocated
+extern int g_io_init_flag;
+
 // ** API Functions, Types, and Variables ** //
 
 void io_register_model_version(char *sha1);
@@ -61,7 +65,6 @@ typedef struct {
 } io_lptype;
 
 extern io_lptype * g_io_lp_types;
-
 
 // ** Internal IO types, variables, and functions ** //
 
