@@ -5,8 +5,6 @@
 //Rensselaer Polytechnic Institute
 //Decemeber 13, 2013
 
-#include "ross.h"
-
 // ** Global IO System variables ** //
 
 // Set with command line --io-parts
