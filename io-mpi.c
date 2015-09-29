@@ -22,7 +22,9 @@ char g_io_checkpoint_name[1024];
 int g_io_events_buffered_per_rank = 0;
 tw_eventq g_io_buffered_events;
 tw_eventq g_io_free_events;
-int g_io_init_flag = 0;
+
+// Local Variables
+static int l_io_init_flag = 0;
 
 // Command Line Options
 const tw_optdef io_opts[] = {
@@ -40,7 +42,7 @@ void io_register_model_version (char *sha1) {
 }
 
 inline tw_event * io_event_grab(tw_pe *pe) {
-    if (!g_io_init_flag) {
+    if (!l_io_init_flag) {
       // the RIO system has not been initialized
       return pe->abort_event;
     }
@@ -74,7 +76,7 @@ void io_init(int num_files, int num_partitions) {
     g_io_number_of_files = num_files;
     g_io_number_of_partitions = num_partitions;
     g_io_partitions_on_rank = num_partitions / tw_nnodes();
-    g_io_init_flag = 1;
+    l_io_init_flag = 1;
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_on_rank);
     }
@@ -89,7 +91,7 @@ void io_init(int num_files, int num_partitions) {
 void io_final() {
     g_io_number_of_files = 0;
     g_io_number_of_partitions = 0;
-    g_io_init_flag = 0;
+    l_io_init_flag = 0;
 }
 
 void io_read_master_header(char * master_filename) {
@@ -100,7 +102,7 @@ void io_read_master_header(char * master_filename) {
     int num_partitions = 0;
     fscanf(master_header, "%d %d", &num_files, &num_partitions);
 
-    if (!g_io_init_flag) {
+    if (!l_io_init_flag) {
     	io_init(num_files, num_partitions);
     }
 

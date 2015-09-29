@@ -37,10 +37,6 @@ extern char g_io_checkpoint_name[1024];
 // Maximum number of events that will be scheduled past end time
 extern int g_io_events_buffered_per_rank;
 
-// Set by RIO in io_init
-// Used to specify if RIO is activated and allocated
-extern int g_io_init_flag;
-
 // ** API Functions, Types, and Variables ** //
 
 void io_register_model_version(char *sha1);
