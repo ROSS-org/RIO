@@ -494,7 +494,7 @@ static size_t io_event_serialize (tw_event *e, void *buffer) {
     tmp.recv_ts = e->recv_ts - g_tw_ts_end;
 
     memcpy(buffer, &tmp, sizeof(io_event_store));
-    printf("Storing event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
+    // printf("Storing event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
     return sizeof(io_event_store);
 }
 
