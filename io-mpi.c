@@ -515,6 +515,6 @@ static size_t io_event_deserialize (tw_event *e, void *buffer) {
         tw_error(TW_LOC, "RIO ERROR: Unsupported mapping");
     }
     e->recv_ts = tmp.recv_ts;
-    printf("Loading event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
+    // printf("Loading event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);
     return sizeof(io_event_store);
 }
