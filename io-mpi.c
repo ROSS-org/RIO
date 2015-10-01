@@ -267,7 +267,7 @@ void io_load_events(tw_pe * me) {
     tw_stime original_lookahead = g_tw_lookahead;
     //These messages arrive before the first conservative window
     //checking for valid lookahead is unnecessary
-    g_tw_lookahead = 0.000001;
+    g_tw_lookahead = 0;
     for (i = 0; i < event_count; i++) {
         me->cur_event = me->abort_event;
         me->cur_event->caused_by_me = NULL;
