@@ -383,14 +383,14 @@ void io_store_checkpoint(char * master_filename) {
     MPI_Type_contiguous(io_partition_field_count, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
 
-    for (i = 0; i < g_io_partitions_on_rank; i++) {
-        printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-            my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-            my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
-    }
+    // for (i = 0; i < g_io_partitions_on_rank; i++) {
+    //     printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+    //         my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
+    //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
+    // }
     int psize;
     MPI_Type_size(MPI_IO_PART, &psize);
-    printf("Metadata size: %d or %lu\n", psize, sizeof(io_partition));
+    // printf("Metadata size: %d or %lu\n", psize, sizeof(io_partition));
 
     offset = (long long) sizeof(io_partition) * g_io_partitions_on_rank * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
