@@ -202,11 +202,11 @@ void io_load_checkpoint(char * master_filename) {
 
     MPI_File_close(&fh);
 
-    for (i = 0; i < g_io_partitions_on_rank; i++) {
-        printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-            my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-            my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
-    }
+    // for (i = 0; i < g_io_partitions_on_rank; i++) {
+    //     printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+    //         my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
+    //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
+    // }
 
     // Now data files
     for (i = 1; i < g_io_partitions_on_rank; i++) {
