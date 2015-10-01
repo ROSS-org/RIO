@@ -156,7 +156,7 @@ void io_load_checkpoint(char * master_filename) {
     // assert that IO system has been init
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "ERROR: IO variables not set: # of files or # of parts\n");
 
-    g_io_partitions_on_rank = g_io_number_of_partitions / number_of_mpitasks;
+    // TODO: check to make sure io system is init'd?
 
     MPI_File fh;
     MPI_Status status;
