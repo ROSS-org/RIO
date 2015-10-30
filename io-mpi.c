@@ -298,8 +298,9 @@ void io_store_checkpoint(char * master_filename) {
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     if (g_io_partitions_on_rank > 1) {
-        assert((g_tw_nkp % g_io_partitions_on_rank) == 0 && "Error: Writing a checkpoint with multiple partitions per rank with wrong number of KPs\n");
-        // TODO: lp to kp mapping??
+        // Assume each KP is becoming a partition
+        assert((g_tw_nkp == g_io_partitions_on_rank) && "Error: Writing a checkpoint with multiple partitions per rank with wrong number of KPs\n");
+    }
     }
 
     // Gather LP size data
