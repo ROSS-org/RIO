@@ -301,6 +301,11 @@ void io_store_checkpoint(char * master_filename) {
         // Assume each KP is becoming a partition
         assert((g_tw_nkp == g_io_partitions_on_rank) && "Error: Writing a checkpoint with multiple partitions per rank with wrong number of KPs\n");
     }
+
+    // LOOP OVER EACH KP/PARTITION
+    int lp_on_kp_count[g_tw_nkp];
+    for (i = 0; i < g_tw_nkp; i++) {
+        lp_on_kp_count[i] = g_tw_kp[i]->lp_count;
     }
 
     // Gather LP size data
