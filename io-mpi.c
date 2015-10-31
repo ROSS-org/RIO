@@ -293,8 +293,6 @@ void io_store_checkpoint(char * master_filename) {
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
-    // ASSUMPTION: A checkpoint writes LP data (only)
-    // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     if (g_io_partitions_on_rank > 1) {
