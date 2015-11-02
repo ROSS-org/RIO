@@ -304,6 +304,10 @@ void io_store_multiple_partitions(char * master_filename) {
     MPI_File fh;
     MPI_Status status;
     MPI_Comm file_comm;
+    int file_number = mpi_rank;
+    MPI_Comm_split(MPI_COMM_WORLD, file_number, 0, &file_comm);
+    MPI_Offset offset = (long long) 0;
+
     char filename[100];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
 
@@ -312,17 +316,15 @@ void io_store_multiple_partitions(char * master_filename) {
     g_io_partitions_on_rank = g_tw_nkp;
     io_partition my_partitions[g_io_partitions_on_rank];
 
-    MPI_Offset offset = (long long) 0;
-
-    size_t all_lp_sizes[g_tw_nlp];
-    int all_lp_i = 0;
+    size_t * all_lp_sizes[g_tw_nkp];
 
     for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
         int lps_on_kp = g_tw_kp[cur_kp]->lp_count;
 
         // Gather LP size data
         int lp_size = sizeof(io_lp_store);
-        size_t model_sizes[lps_on_kp];
+        size_t * model_sizes = (size_t *) calloc(lps_on_kp, sizeof(size_t));
+        all_lp_sizes[cur_kp] = model_sizes;
         int sum_model_size = 0;
 
         // always do this loop to allow for interleaved LP types in g_tw_lp
@@ -332,8 +334,6 @@ void io_store_multiple_partitions(char * master_filename) {
                 int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
                 model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[c]->cur_state, g_tw_lp[c]);
                 sum_model_size += model_sizes[i];
-                all_lp_sizes[all_lp_i] = model_sizes[i];
-                all_lp_i++;
                 i++;
             }
         }
@@ -354,7 +354,7 @@ void io_store_multiple_partitions(char * master_filename) {
         void * b;
 
         // LPs
-        for (c = 0, i = 0, b = buffer; i < g_tw_nlp; i++) {
+        for (c = 0, i = 0, b = buffer; c < g_tw_nlp; c++) {
             if (g_tw_lp[c]->kp->id == cur_kp) {
                 b += io_lp_serialize(g_tw_lp[c], b);
                 int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
@@ -375,12 +375,16 @@ void io_store_multiple_partitions(char * master_filename) {
         }
 
         // Write
+        // in this case each MPI rank gets its own file
+        int file_number = mpi_rank;
+        int file_position = 0;
+        MPI_Comm_split(MPI_COMM_WORLD, file_number, file_position, &file_comm);
         MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
         MPI_File_write_at_all(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
         my_partitions[cur_kp].part = cur_kp;
-        my_partitions[cur_kp].file = 0;
+        my_partitions[cur_kp].file = file_number;
         my_partitions[cur_kp].offset = offset;
         my_partitions[cur_kp].size = sum_size;
         my_partitions[cur_kp].lp_count = lps_on_kp;
@@ -403,11 +407,13 @@ void io_store_multiple_partitions(char * master_filename) {
 
     // Write model size array
     offset = (long long) 0;
-    contribute = (long long) g_tw_nlp;
+    MPI_Offset contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
+
+    // TODO: delete all model size arrays
 
     // WRITE READ ME
     if (mpi_rank == 0) {
