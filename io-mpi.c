@@ -444,7 +444,10 @@ void io_store_multiple_partitions(char * master_filename) {
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
-    // TODO: delete all model size arrays
+    // delete all model size arrays (calloc'd)
+    for (i = 0; i < g_tw_nkp; i++) {
+        delete all_lp_sizes[i];
+    }
 
     // WRITE READ ME
     if (mpi_rank == 0) {
