@@ -134,7 +134,7 @@ void io_read_master_header(char * master_filename) {
     fscanf(master_header, "%d %d", &num_files, &num_partitions);
 
     if (!l_io_init_flag) {
-    	io_init(num_files, num_partitions);
+    	io_init_global(num_files, num_partitions);
     }
 
     assert(num_files == g_io_number_of_files && "Error: Master Header indicated a different number of files than was previously allocated\n");
