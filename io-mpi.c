@@ -347,15 +347,15 @@ void io_store_multiple_partitions(char * master_filename) {
     g_io_partitions_on_rank = g_tw_nkp;
     io_partition my_partitions[g_io_partitions_on_rank];
 
-    size_t * all_lp_sizes[g_tw_nkp];
+    size_t all_lp_sizes[g_tw_nlp];
+    int all_lp_i = 0;
 
     for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
         int lps_on_kp = g_tw_kp[cur_kp]->lp_count;
 
         // Gather LP size data
         int lp_size = sizeof(io_lp_store);
-        size_t * model_sizes = (size_t *) calloc(lps_on_kp, sizeof(size_t));
-        all_lp_sizes[cur_kp] = model_sizes;
+        size_t model_sizes[lps_on_kp];
         int sum_model_size = 0;
 
         // always do this loop to allow for interleaved LP types in g_tw_lp
@@ -365,7 +365,9 @@ void io_store_multiple_partitions(char * master_filename) {
                 int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
                 model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[c]->cur_state, g_tw_lp[c]);
                 sum_model_size += model_sizes[i];
+                all_lp_sizes[all_lp_i] = model_sizes[i];
                 i++;
+                all_lp_i++;
             }
         }
 
