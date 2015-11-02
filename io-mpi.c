@@ -67,26 +67,57 @@ tw_event * io_event_grab(tw_pe *pe) {
     return e;
 }
 
-void io_init(int num_files, int num_partitions) {
+// IDENTICALLY CALLED FROM EACH MPI RANK
+// SUM TOTAL GLOBAL VALUES FOR num_files AND num_partitions ON EACH RANK
+void io_init_global(int global_num_files, int global_num_partitions) {
     int i;
-    if (num_partitions == 0) {
-        num_partitions = tw_nnodes();
+
+    assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
+
+    if (global_num_partitions == 0) {
+        global_num_partitions = tw_nnodes();
     }
 
-    g_io_number_of_files = num_files;
-    g_io_number_of_partitions = num_partitions;
-    g_io_partitions_on_rank = num_partitions / tw_nnodes();
+    g_io_number_of_files = global_num_files;
+    g_io_number_of_partitions = global_num_partitions;
+    g_io_partitions_on_rank = global_num_partitions / tw_nnodes();
     l_io_init_flag = 1;
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_on_rank);
     }
 
-    // tw_eventq_alloc(&g_io_free_events, g_io_events_buffered_per_rank);
     g_io_free_events.size = 0;
     g_io_free_events.head = g_io_free_events.tail = NULL;
     g_io_buffered_events.size = 0;
     g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
 }
+
+// CALLED INDEPENDENTLY FROM EACH MPI RANK
+// PER-RANK LOCAL VALUES FOR num_partitions
+// ASSUME 1 FILE PER PROCESSOR
+void io_init_local(int local_num_partitions) {
+    int i;
+
+    assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
+
+    if (local_num_partitions == 0) {
+        local_num_partitions = 1;
+    }
+
+    g_io_number_of_files = tw_nnodes();
+    MPI_Allreduce(&local_num_partitions, &g_io_number_of_partitions, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    g_io_partitions_on_rank = local_num_partitions;
+    l_io_init_flag = 1;
+    if (g_tw_mynode == 0) {
+        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\n", g_io_number_of_files, g_io_number_of_partitions);
+    }
+
+    g_io_free_events.size = 0;
+    g_io_free_events.head = g_io_free_events.tail = NULL;
+    g_io_buffered_events.size = 0;
+    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
+}
+
 
 void io_final() {
     g_io_number_of_files = 0;

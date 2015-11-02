@@ -40,7 +40,8 @@ extern int g_io_events_buffered_per_rank;
 // ** API Functions, Types, and Variables ** //
 
 void io_register_model_version(char *sha1);
-void io_init(int num_files, int num_partitions);
+void io_init_global(int global_num_files, int global_num_partitions);
+void io_init_local(int local_num_partitions);
 void io_final();
 void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
