@@ -409,9 +409,7 @@ void io_store_multiple_partitions(char * master_filename) {
 
         // Write
         // in this case each MPI rank gets its own file
-        int file_number = mpi_rank;
         int file_position = 0;
-        MPI_Comm_split(MPI_COMM_WORLD, file_number, file_position, &file_comm);
         MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
         MPI_File_write_at_all(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
         MPI_File_close(&fh);
