@@ -344,7 +344,6 @@ void io_store_multiple_partitions(char * master_filename) {
 
     // ASSUMPTION FOR MULTIPLE PARTS-PER-RANK
     // Each MPI-Rank gets its own file
-    g_io_partitions_on_rank = g_tw_nkp;
     io_partition my_partitions[g_io_partitions_on_rank];
 
     size_t all_lp_sizes[g_tw_nlp];
