@@ -319,7 +319,7 @@ void io_load_events(tw_pe * me) {
     g_tw_lookahead = original_lookahead;
 }
 
-void io_store_multiple_partitions(char * master_filename) {
+void io_store_multiple_partitions(char * master_filename, int append_flag, int data_file_number) {
     int i, c, cur_kp;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
@@ -335,7 +335,7 @@ void io_store_multiple_partitions(char * master_filename) {
     MPI_File fh;
     MPI_Status status;
     MPI_Comm file_comm;
-    int file_number = mpi_rank;
+    int file_number = data_file_number;
     MPI_Comm_split(MPI_COMM_WORLD, file_number, 0, &file_comm);
     MPI_Offset offset = (long long) 0;
 
@@ -423,6 +423,13 @@ void io_store_multiple_partitions(char * master_filename) {
         offset += (long long) sum_size;
     }
 
+    int amode;
+    if (append_flag) {
+        amode = MPI_MODE_CREATE | MPI_MODE_RDWR | MPI_MODE_APPEND;
+    } else {
+        amode = MPI_MODE_CREATE | MPI_MODE_RDWR;
+    }
+
     // Write Metadata
     MPI_Datatype MPI_IO_PART;
     MPI_Type_contiguous(io_partition_field_count, MPI_INT, &MPI_IO_PART);
@@ -433,7 +440,7 @@ void io_store_multiple_partitions(char * master_filename) {
 
     offset = (long long) sizeof(io_partition) * g_io_partitions_on_rank * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
     MPI_File_close(&fh);
 
@@ -442,7 +449,7 @@ void io_store_multiple_partitions(char * master_filename) {
     MPI_Offset contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     sprintf(filename, "%s.lp", master_filename);
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 

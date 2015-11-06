@@ -49,6 +49,7 @@ void io_write_master_header(char * master_filename);
 void io_load_checkpoint(char * master_filename);
 void io_load_events(tw_pe * me);
 void io_store_checkpoint(char * master_filename);
+void io_store_multiple_partitions(char * master_filename, int append_flag, int data_file_number);
 
 // LP type map and function struct
 typedef void (*serialize_f)(void * state, void * buffer, tw_lp *lp);
