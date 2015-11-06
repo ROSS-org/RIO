@@ -424,6 +424,7 @@ void io_store_multiple_partitions(char * master_filename) {
         offset += (long long) sum_size;
     }
 
+    // Write Metadata
     MPI_Datatype MPI_IO_PART;
     MPI_Type_contiguous(io_partition_field_count, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
@@ -435,12 +436,14 @@ void io_store_multiple_partitions(char * master_filename) {
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+    MPI_File_close(&fh);
 
     // Write model size array
     offset = (long long) 0;
     MPI_Offset contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
+    sprintf(filename, "%s.lp", master_filename);
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
