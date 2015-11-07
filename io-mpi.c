@@ -454,7 +454,7 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
     MPI_File_close(&fh);
 
     // WRITE READ ME
-    if (mpi_rank == 0) {
+    if (mpi_rank == 0 && (!append_flag || data_file_number == 0) ) {
         FILE *file;
         sprintf(filename, "%s.read-me.txt", master_filename);
         file = fopen(filename, "w");
@@ -473,8 +473,13 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
 #endif
         fprintf(file, "MODEL Version:\t%s\n", model_version);
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
-        fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
-        fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
+        if (append_flag) {
+            fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
+            fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
+        } else {
+            fprintf(file, "Data Files:\t%d+?\n", g_io_number_of_files);
+            fprintf(file, "Partitions:\t%d+?\n", g_io_number_of_partitions);
+        }
 #ifdef RAND_NORMAL
         fprintf(file, "RAND_NORMAL\tON\n");
 #else
