@@ -208,6 +208,7 @@ void io_load_checkpoint(char * master_filename) {
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
 	MPI_File_read_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+    MPI_File_close(&fh);
 
     // error check
     int count_sum = 0;
@@ -220,17 +221,18 @@ void io_load_checkpoint(char * master_filename) {
     offset = (long long) 0;
     long long contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
 
     size_t model_sizes[g_tw_nlp];
     int index = 0;
+
+    sprintf(filename, "%s.lp", master_filename);
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
     for (i = 0; i < g_io_partitions_on_rank; i++){
         int data_count = my_partitions[i].lp_count;
         MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
         index += data_count;
         offset += (long long) data_count;
     }
-
     MPI_File_close(&fh);
 
     // for (i = 0; i < g_io_partitions_on_rank; i++) {
