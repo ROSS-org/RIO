@@ -438,6 +438,10 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
+    if (append_flag == 1) {
+        printf("%d parts written\n", g_io_partitions_on_rank);
+    }
+
     // WRITE READ ME
     if (mpi_rank == 0 && (append_flag == 0 || data_file_number == 0) ) {
         FILE *file;
