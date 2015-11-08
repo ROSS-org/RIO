@@ -239,11 +239,7 @@ void io_load_checkpoint(char * master_filename) {
     //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
     // }
 
-    // Now data files
-    for (i = 1; i < g_io_partitions_on_rank; i++) {
-        assert(my_partitions[i].file == my_partitions[0].file && "ERROR: Some rank has partitions spread across files\n");
-    }
-
+    // DATA FILES
     // Read file
     MPI_Comm file_comm;
     int file_number = my_partitions[0].file;
