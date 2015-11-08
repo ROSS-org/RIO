@@ -180,7 +180,7 @@ void process_metadata(char * data_block, int mpi_rank) {
 }
 
 void io_load_checkpoint(char * master_filename) {
-    int i;
+    int i, cur_part;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
@@ -242,40 +242,27 @@ void io_load_checkpoint(char * master_filename) {
     // }
 
     // DATA FILES
-    // Read file
     MPI_Comm file_comm;
-    int file_number = my_partitions[0].file;
-    int partitions_size = 0;
-    for (i = 0; i < g_io_partitions_on_rank; i++) {
-        partitions_size += my_partitions[i].size;
-    }
-    char buffer[partitions_size];
-    void * b = buffer;
-    sprintf(filename, "%s.data-%d", master_filename, file_number);
+    int all_lp_i = 0;
+    for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++) {
+        // Read file
+        char buffer[my_partitions[cur_part].size];
+        void * b = buffer;
+        sprintf(filename, "%s.data-%d", master_filename, my_partitions[cur_part].file);
 
-    MPI_Comm_split(MPI_COMM_WORLD, file_number, mpi_rank, &file_comm);
-    MPI_File_open(file_comm, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+        // Must use non-collectives, can't know status of other MPI-ranks
+        MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+        MPI_File_read_at(fh, (long long) my_partitions[i].offset, b, my_partitions[i].size, MPI_BYTE, &status);
+        MPI_File_close(&fh);
 
-    // FOR SOME REASON WE CAN'T DO A SINGLE READ OF MULTIPLE PARTITIONS
-    for (i = 0; i < g_io_partitions_on_rank; i++){
-        offset = (long long) my_partitions[i].offset;
-        MPI_File_read_at_all(fh, offset, b, my_partitions[i].size, MPI_BYTE, &status);
-        b += my_partitions[i].size;
-    }
-
-    MPI_File_close(&fh);
-
-    // Load Data
-    int p;
-    int l = 0;
-    for (p = 0, b = buffer; p < g_io_partitions_on_rank; p++) {
-        for (i = 0; i < my_partitions[p].lp_count; i++, l++) {
-            b += io_lp_deserialize(g_tw_lp[l], b);
-            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[l]->cur_state, b, g_tw_lp[l]);
-            b += model_sizes[l];
+        // Load Data
+        for (i = 0; i < my_partitions[cur_part].lp_count; i++, all_lp_i++) {
+            b += io_lp_deserialize(g_tw_lp[all_lp_i], b);
+            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[all_lp_i]->cur_state, b, g_tw_lp[all_lp_i]);
+            b += model_sizes[all_lp_i];
         }
-        assert(my_partitions[p].ev_count <= g_io_free_events.size);
-        for (i = 0; i < my_partitions[p].ev_count; i++) {
+        assert(my_partitions[cur_part].ev_count <= g_io_free_events.size);
+        for (i = 0; i < my_partitions[cur_part].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event *ev = tw_eventq_pop(&g_io_free_events);
             b += io_event_deserialize(ev, b);
