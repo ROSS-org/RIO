@@ -16,6 +16,7 @@ io_partition * g_io_partitions;
 int g_io_number_of_files = 0;
 int g_io_number_of_partitions = 0;
 int g_io_partitions_on_rank = 0;
+int g_io_partitions_offset = 0;
 io_lptype * g_io_lp_types = NULL;
 io_load_type g_io_load_at = NONE;
 char g_io_checkpoint_name[1024];
@@ -107,6 +108,7 @@ void io_init_local(int local_num_partitions) {
     g_io_number_of_files = tw_nnodes();
     MPI_Allreduce(&local_num_partitions, &g_io_number_of_partitions, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     g_io_partitions_on_rank = local_num_partitions;
+    MPI_Exscan(&g_io_partitions_on_rank, &g_io_partitions_offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     l_io_init_flag = 1;
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\n", g_io_number_of_files, g_io_number_of_partitions);
@@ -201,7 +203,8 @@ void io_load_checkpoint(char * master_filename) {
     MPI_Type_commit(&MPI_IO_PART);
     int partition_md_size;
     MPI_Type_size(MPI_IO_PART, &partition_md_size);
-    MPI_Offset offset = (long long) partition_md_size * mpi_rank * g_io_partitions_on_rank;
+    MPI_Offset offset = (long long) partition_md_size * g_io_partitions_offset;
+
 
     io_partition my_partitions[g_io_partitions_on_rank];
 
