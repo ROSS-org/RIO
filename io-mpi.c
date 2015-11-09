@@ -231,8 +231,8 @@ void io_load_checkpoint(char * master_filename) {
 
     sprintf(filename, "%s.lp", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    for (i = 0; i < g_io_partitions_on_rank; i++){
-        int data_count = my_partitions[i].lp_count;
+    for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++){
+        int data_count = my_partitions[cur_part].lp_count;
         MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
         index += data_count;
         offset += (long long) data_count * sizeof(size_t);
@@ -256,7 +256,7 @@ void io_load_checkpoint(char * master_filename) {
 
         // Must use non-collectives, can't know status of other MPI-ranks
         MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-        MPI_File_read_at(fh, (long long) my_partitions[i].offset, b, my_partitions[i].size, MPI_BYTE, &status);
+        MPI_File_read_at(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
         // Load Data
