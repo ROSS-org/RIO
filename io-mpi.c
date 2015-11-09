@@ -224,6 +224,7 @@ void io_load_checkpoint(char * master_filename) {
     offset = (long long) 0;
     long long contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    offset *= sizeof(size_t);
 
     size_t model_sizes[g_tw_nlp];
     int index = 0;
@@ -234,7 +235,7 @@ void io_load_checkpoint(char * master_filename) {
         int data_count = my_partitions[i].lp_count;
         MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
         index += data_count;
-        offset += (long long) data_count;
+        offset += (long long) data_count * sizeof(size_t);
     }
     MPI_File_close(&fh);
 
