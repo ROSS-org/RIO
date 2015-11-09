@@ -208,24 +208,15 @@ void io_load_checkpoint(char * master_filename) {
 
     io_partition my_partitions[g_io_partitions_on_rank];
 
-    // printf("Rand %d loading metadata (%d on rank, offset part %d) \n", mpi_rank, g_io_partitions_on_rank, g_io_partitions_offset);
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
 	MPI_File_read_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
     MPI_File_close(&fh);
-    if (mpi_rank == -1) {
-        for (i = 0; i < g_io_partitions_on_rank; i++) {
-            printf("%d:\t%d\t%d\t%d\t%d\t%d\t%d\n", mpi_rank, my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset, my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
-        }
-    }
 
     // error check
     int count_sum = 0;
     for (i = 0; i < g_io_partitions_on_rank; i++) {
         count_sum += my_partitions[i].lp_count;
-    }
-    if (count_sum != g_tw_nlp) {
-        printf("Rank %d found %d lps in the partitions (expected %d)\n", mpi_rank, count_sum, g_tw_nlp);
     }
     assert(count_sum == g_tw_nlp && "ERROR: wrong number of LPs in partitions");
 
@@ -237,7 +228,6 @@ void io_load_checkpoint(char * master_filename) {
     size_t model_sizes[g_tw_nlp];
     int index = 0;
 
-    printf("Rand %d loading lp sizes\n", mpi_rank);
     sprintf(filename, "%s.lp", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     for (i = 0; i < g_io_partitions_on_rank; i++){
@@ -258,7 +248,6 @@ void io_load_checkpoint(char * master_filename) {
     MPI_Comm file_comm;
     int all_lp_i = 0;
     for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++) {
-        printf("Rank %ld reading file %d part %d\n", g_tw_mynode, my_partitions[cur_part].file, my_partitions[cur_part].part);
         // Read file
         char buffer[my_partitions[cur_part].size];
         void * b = buffer;
