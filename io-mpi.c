@@ -398,8 +398,8 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
         // Write
         // in this case each MPI rank gets its own file
         int file_position = 0;
-        MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-        MPI_File_write_at_all(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
+        MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_WRONLY | MPI_MODE_APPEND, MPI_INFO_NULL, &fh);
+        MPI_File_write(fh, &buffer, sum_size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
         my_partitions[cur_kp].part = cur_kp;
@@ -414,9 +414,9 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
 
     int amode;
     if (append_flag) {
-        amode = MPI_MODE_CREATE | MPI_MODE_RDWR | MPI_MODE_APPEND;
+        amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR | MPI_MODE_APPEND;
     } else {
-        amode = MPI_MODE_CREATE | MPI_MODE_RDWR;
+        amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR;
     }
 
     // Write Metadata
