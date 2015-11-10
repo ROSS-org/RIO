@@ -233,7 +233,7 @@ void io_load_checkpoint(char * master_filename) {
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++){
         int data_count = my_partitions[cur_part].lp_count;
-        MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        MPI_File_read_at(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
         index += data_count;
         offset += (long long) data_count * sizeof(size_t);
     }
