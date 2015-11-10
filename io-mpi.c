@@ -43,8 +43,9 @@ void io_register_model_version (char *sha1) {
 }
 
 tw_event * io_event_grab(tw_pe *pe) {
-    if (!l_io_init_flag) {
+    if (!l_io_init_flag || g_io_events_buffered_per_rank == 0) {
       // the RIO system has not been initialized
+      // or we are not buffering events
       return pe->abort_event;
     }
 
@@ -412,7 +413,7 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
         offset += (long long) sum_size;
     }
 
-    MPI_Comm_free(file_comm);
+    MPI_Comm_free(&file_comm);
 
     int amode;
     if (append_flag) {
