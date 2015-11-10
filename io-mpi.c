@@ -412,6 +412,8 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
         offset += (long long) sum_size;
     }
 
+    MPI_Comm_free(file_comm);
+
     int amode;
     if (append_flag) {
         amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR | MPI_MODE_APPEND;
