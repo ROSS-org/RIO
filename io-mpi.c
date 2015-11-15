@@ -338,7 +338,7 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
     MPI_Comm_split(MPI_COMM_WORLD, file_number, 0, &file_comm);
     MPI_Offset offset = (long long) 0;
 
-    char filename[100];
+    char filename[256];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
 
     // ASSUMPTION FOR MULTIPLE PARTS-PER-RANK
