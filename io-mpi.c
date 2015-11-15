@@ -194,7 +194,7 @@ void io_load_checkpoint(char * master_filename) {
 
     MPI_File fh;
     MPI_Status status;
-    char filename[100];
+    char filename[257];
 
     // Read MH
 
