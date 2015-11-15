@@ -230,7 +230,7 @@ void io_load_checkpoint(char * master_filename) {
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     offset *= sizeof(size_t);
 
-    size_t model_sizes[g_tw_nlp];
+    size_t * model_sizes = (size_t *) calloc(g_tw_nlp, sizeof(size_t));
     int index = 0;
 
     sprintf(filename, "%s.lp", master_filename);
@@ -287,6 +287,8 @@ void io_load_checkpoint(char * master_filename) {
             tw_eventq_push(&g_io_buffered_events, ev);
         }
     }
+
+    free(model_sizes);
 
     return;
 }
