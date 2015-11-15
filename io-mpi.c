@@ -183,7 +183,7 @@ void process_metadata(char * data_block, int mpi_rank) {
 }
 
 void io_load_checkpoint(char * master_filename) {
-    int i, cur_part;
+    int i, cur_part, rc;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
