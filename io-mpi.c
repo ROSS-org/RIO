@@ -194,7 +194,7 @@ void io_load_checkpoint(char * master_filename) {
 
     MPI_File fh;
     MPI_Status status;
-    char filename[100];
+    char filename[257];
 
     // Read MH
 
@@ -212,7 +212,7 @@ void io_load_checkpoint(char * master_filename) {
     sprintf(filename, "%s.mh", master_filename);
     rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (rc != 0) {
-        printf("ERROR: could not MPI_File_Open %s\n", filename);
+        printf("ERROR: could not MPI_File_open %s\n", filename);
     }
 	MPI_File_read_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
     MPI_File_close(&fh);
@@ -230,7 +230,7 @@ void io_load_checkpoint(char * master_filename) {
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     offset *= sizeof(size_t);
 
-    size_t model_sizes[g_tw_nlp];
+    size_t * model_sizes = (size_t *) calloc(g_tw_nlp, sizeof(size_t));
     int index = 0;
 
     sprintf(filename, "%s.lp", master_filename);
@@ -253,7 +253,6 @@ void io_load_checkpoint(char * master_filename) {
     // }
 
     // DATA FILES
-    MPI_Comm file_comm;
     int all_lp_i = 0;
     for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++) {
         // Read file
@@ -262,10 +261,18 @@ void io_load_checkpoint(char * master_filename) {
         sprintf(filename, "%s.data-%d", master_filename, my_partitions[cur_part].file);
 
         // Must use non-collectives, can't know status of other MPI-ranks
+<<<<<<< HEAD
         rc = MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
         if (rc != 0) {
             printf("ERROR: could not MPI_File_open %s\n", filename);
         }
+=======
+
+    rc =     MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (rc != 0) {
+        printf("ERROR: could not MPI_File_open %s\n", filename);
+    }
+>>>>>>> b31e833e9547547981ccd91a59deea0b141af6df
         MPI_File_read_at(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
@@ -287,6 +294,8 @@ void io_load_checkpoint(char * master_filename) {
             tw_eventq_push(&g_io_buffered_events, ev);
         }
     }
+
+    free(model_sizes);
 
     return;
 }
