@@ -261,18 +261,10 @@ void io_load_checkpoint(char * master_filename) {
         sprintf(filename, "%s.data-%d", master_filename, my_partitions[cur_part].file);
 
         // Must use non-collectives, can't know status of other MPI-ranks
-<<<<<<< HEAD
         rc = MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
         if (rc != 0) {
             printf("ERROR: could not MPI_File_open %s\n", filename);
         }
-=======
-
-    rc =     MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if (rc != 0) {
-        printf("ERROR: could not MPI_File_open %s\n", filename);
-    }
->>>>>>> b31e833e9547547981ccd91a59deea0b141af6df
         MPI_File_read_at(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
