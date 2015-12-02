@@ -65,7 +65,7 @@ tw_event * io_event_grab(tw_pe *pe) {
         printf("WARNING: did not allocate enough events to RIO buffer\n");
         e = pe->abort_event;
     }
-    pe->stats.s_rio += (tw_clock_read() - start);
+    pe->stats.s_rio_load += (tw_clock_read() - start);
     return e;
 }
 
