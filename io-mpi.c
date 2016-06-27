@@ -26,6 +26,7 @@ tw_eventq g_io_free_events;
 
 // Local Variables
 static int l_io_init_flag = 0;
+static int l_io_append_flag = 0;
 
 // Command Line Options
 const tw_optdef io_opts[] = {
@@ -122,6 +123,13 @@ void io_init_local(int local_num_partitions) {
     io_init_event_buffers();
 }
 
+// This run is part of a larger set of DISPARATE runs
+// append the .mh and .lp files
+static void io_appending_job() {
+    if (l_io_init_flag == 1) {
+        l_io_append_flag = 1;
+    }
+}
 
 void io_final() {
     g_io_number_of_files = 0;
@@ -267,7 +275,7 @@ void io_load_events(tw_pe * me) {
 }
 
 // USED FOR MULTIPLE PARTS-PER-RANK
-void io_store_multiple_partitions(char * master_filename, int append_flag, int data_file_number) {
+void io_store_multiple_partitions(char * master_filename, int data_file_number) {
     int i, c, cur_kp;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
@@ -391,7 +399,7 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
     MPI_Comm_free(&file_comm);
 
     int amode;
-    if (append_flag) {
+    if (l_io_append_flag) {
         amode = MPI_MODE_CREATE | MPI_MODE_RDWR | MPI_MODE_APPEND;
     } else {
         amode = MPI_MODE_CREATE | MPI_MODE_RDWR;
@@ -420,17 +428,17 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
     MPI_File_write(fh, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
-    if (append_flag == 1) {
+    if (l_io_append_flag == 1) {
         printf("%d parts written\n", g_io_partitions_on_rank);
     }
 
     // WRITE READ ME
-    if (mpi_rank == 0 && (append_flag == 0 || data_file_number == 0) ) {
-        write_readme(master_filename, append_flag);
+    if (mpi_rank == 0 && (l_io_append_flag == 0 || data_file_number == 0) ) {
+        write_readme(master_filename);
     }
 }
 
-static void io_write_readme(char * master_filename, int append_flag) {
+static void io_write_readme(char * master_filename) {
         FILE *file;
         char filename[256];
 
@@ -451,7 +459,7 @@ static void io_write_readme(char * master_filename, int append_flag) {
 #endif
         fprintf(file, "MODEL Version:\t%s\n", model_version);
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
-        if (append_flag == 0) {
+        if (l_io_append_flag == 0) {
             fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
             fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
         } else {
