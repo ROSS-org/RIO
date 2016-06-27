@@ -94,6 +94,8 @@ typedef struct {
 
 extern io_partition * g_io_partitions;
 
+// SERIALIZE FUNCTIONS for LP and EVENT structs
+// found in io-serialize.c
 static size_t io_lp_serialize (tw_lp * lp, void * buffer);
 static size_t io_lp_deserialize (tw_lp * lp, void * buffer);
 static size_t io_event_serialize (tw_event * e, void * buffer);

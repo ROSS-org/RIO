@@ -1,6 +1,6 @@
 PROJECT(RIO)
 
-SET(rio_srcs io.h io-mpi.c)
+SET(rio_srcs io.h io-mpi.c io-serialize.c)
 
 ## Print RIO Git Hash
 LIST(APPEND CMAKE_MODULE_PATH "${ROSS_SOURCE_DIR}/cmake/")
