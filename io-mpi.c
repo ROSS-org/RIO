@@ -334,7 +334,27 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
         int sum_lp_size = lps_on_kp * lp_size;
         int sum_size = sum_lp_size + sum_model_size + sum_event_size;
 
+        my_partitions[cur_kp].part = cur_kp;
+        my_partitions[cur_kp].file = file_number;
+        my_partitions[cur_kp].size = sum_size;
+        my_partitions[cur_kp].lp_count = lps_on_kp;
+        my_partitions[cur_kp].ev_count = event_count;
+
+        contribute += sum_size;
+    }
+
+    // MPI EXSCAN FOR OFFSET
+    if (file_comm_count > 1) {
+        offset = MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
+    } else {
+        offset = (long long) 0;
+    }
+
+    for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
+
         // ** START Serialize **
+
+        sum_size = my_partitions[cur_kp].size;
         char buffer[sum_size];
         void * b;
 
@@ -360,19 +380,11 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
         }
 
         // Write
-        // in this case each MPI rank gets its own file
-        int file_position = 0;
-        MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_WRONLY | MPI_MODE_APPEND, MPI_INFO_NULL, &fh);
+        MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY | MPI_MODE_APPEND, MPI_INFO_NULL, &fh);
         MPI_File_write(fh, &buffer, sum_size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
-        my_partitions[cur_kp].part = cur_kp;
-        my_partitions[cur_kp].file = file_number;
         my_partitions[cur_kp].offset = offset;
-        my_partitions[cur_kp].size = sum_size;
-        my_partitions[cur_kp].lp_count = lps_on_kp;
-        my_partitions[cur_kp].ev_count = event_count;
-
         offset += (long long) sum_size;
     }
 
@@ -380,9 +392,9 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
 
     int amode;
     if (append_flag) {
-        amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR | MPI_MODE_APPEND;
+        amode = MPI_MODE_CREATE | MPI_MODE_RDWR | MPI_MODE_APPEND;
     } else {
-        amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR;
+        amode = MPI_MODE_CREATE | MPI_MODE_RDWR;
     }
 
     // Write Metadata
