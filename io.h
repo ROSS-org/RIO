@@ -96,10 +96,10 @@ extern io_partition * g_io_partitions;
 
 // SERIALIZE FUNCTIONS for LP and EVENT structs
 // found in io-serialize.c
-static size_t io_lp_serialize (tw_lp * lp, void * buffer);
-static size_t io_lp_deserialize (tw_lp * lp, void * buffer);
-static size_t io_event_serialize (tw_event * e, void * buffer);
-static size_t io_event_deserialize (tw_event * e, void * buffer);
+size_t io_lp_serialize (tw_lp * lp, void * buffer);
+size_t io_lp_deserialize (tw_lp * lp, void * buffer);
+size_t io_event_serialize (tw_event * e, void * buffer);
+size_t io_event_deserialize (tw_event * e, void * buffer);
 
 // INLINE function for buffering events past end time
 extern tw_eventq g_io_buffered_events;

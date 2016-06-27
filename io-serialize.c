@@ -1,7 +1,7 @@
 #include "ross.h"
 #include "io-config.h"
 
-static size_t io_lp_serialize (tw_lp *lp, void *buffer) {
+size_t io_lp_serialize (tw_lp *lp, void *buffer) {
     int i, j;
 
     io_lp_store tmp;
@@ -24,7 +24,7 @@ static size_t io_lp_serialize (tw_lp *lp, void *buffer) {
     return sizeof(io_lp_store);
 }
 
-static size_t io_lp_deserialize (tw_lp *lp, void *buffer) {
+size_t io_lp_deserialize (tw_lp *lp, void *buffer) {
     int i, j;
 
     io_lp_store tmp;
@@ -47,7 +47,7 @@ static size_t io_lp_deserialize (tw_lp *lp, void *buffer) {
     return sizeof(io_lp_store);
 }
 
-static size_t io_event_serialize (tw_event *e, void *buffer) {
+size_t io_event_serialize (tw_event *e, void *buffer) {
     int i;
 
     io_event_store tmp;
@@ -62,7 +62,7 @@ static size_t io_event_serialize (tw_event *e, void *buffer) {
     return sizeof(io_event_store);
 }
 
-static size_t io_event_deserialize (tw_event *e, void *buffer) {
+size_t io_event_deserialize (tw_event *e, void *buffer) {
     int i;
 
     io_event_store tmp;
