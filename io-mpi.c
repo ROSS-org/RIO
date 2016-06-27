@@ -274,8 +274,7 @@ void io_load_events(tw_pe * me) {
     g_tw_lookahead = original_lookahead;
 }
 
-// USED FOR MULTIPLE PARTS-PER-RANK
-void io_store_multiple_partitions(char * master_filename, int data_file_number) {
+void io_store(char * master_filename, int data_file_number) {
     int i, c, cur_kp;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
@@ -434,11 +433,6 @@ void io_store_multiple_partitions(char * master_filename, int data_file_number) 
 
     // WRITE READ ME
     if (mpi_rank == 0 && (l_io_append_flag == 0 || data_file_number == 0) ) {
-        write_readme(master_filename);
-    }
-}
-
-static void io_write_readme(char * master_filename) {
         FILE *file;
         char filename[256];
 
