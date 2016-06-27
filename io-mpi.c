@@ -274,7 +274,7 @@ void io_load_events(tw_pe * me) {
     g_tw_lookahead = original_lookahead;
 }
 
-void io_store(char * master_filename, int data_file_number) {
+void io_store_checkpoint(char * master_filename, int data_file_number) {
     int i, c, cur_kp;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
