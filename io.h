@@ -40,7 +40,8 @@ extern int g_io_events_buffered_per_rank;
 // ** API Functions, Types, and Variables ** //
 
 void io_register_model_version(char *sha1);
-void io_init(int num_files, int num_partitions);
+void io_init_global(int global_num_files, int global_num_partitions);
+void io_init_local(int local_num_partitions);
 void io_final();
 void io_read_master_header(char * master_filename);
 void io_write_master_header(char * master_filename);
@@ -48,6 +49,7 @@ void io_write_master_header(char * master_filename);
 void io_load_checkpoint(char * master_filename);
 void io_load_events(tw_pe * me);
 void io_store_checkpoint(char * master_filename);
+void io_store_multiple_partitions(char * master_filename, int append_flag, int data_file_number);
 
 // LP type map and function struct
 typedef void (*serialize_f)(void * state, void * buffer, tw_lp *lp);

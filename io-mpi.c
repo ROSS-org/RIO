@@ -16,6 +16,7 @@ io_partition * g_io_partitions;
 int g_io_number_of_files = 0;
 int g_io_number_of_partitions = 0;
 int g_io_partitions_on_rank = 0;
+int g_io_partitions_offset = 0;
 io_lptype * g_io_lp_types = NULL;
 io_load_type g_io_load_at = NONE;
 char g_io_checkpoint_name[1024];
@@ -42,8 +43,9 @@ void io_register_model_version (char *sha1) {
 }
 
 tw_event * io_event_grab(tw_pe *pe) {
-    if (!l_io_init_flag) {
+    if (!l_io_init_flag || g_io_events_buffered_per_rank == 0) {
       // the RIO system has not been initialized
+      // or we are not buffering events
       return pe->abort_event;
     }
 
@@ -63,30 +65,62 @@ tw_event * io_event_grab(tw_pe *pe) {
         printf("WARNING: did not allocate enough events to RIO buffer\n");
         e = pe->abort_event;
     }
-    pe->stats.s_rio += (tw_clock_read() - start);
+    pe->stats.s_rio_load += (tw_clock_read() - start);
     return e;
 }
 
-void io_init(int num_files, int num_partitions) {
+// IDENTICALLY CALLED FROM EACH MPI RANK
+// SUM TOTAL GLOBAL VALUES FOR num_files AND num_partitions ON EACH RANK
+void io_init_global(int global_num_files, int global_num_partitions) {
     int i;
-    if (num_partitions == 0) {
-        num_partitions = tw_nnodes();
+
+    assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
+
+    if (global_num_partitions == 0) {
+        global_num_partitions = tw_nnodes();
     }
 
-    g_io_number_of_files = num_files;
-    g_io_number_of_partitions = num_partitions;
-    g_io_partitions_on_rank = num_partitions / tw_nnodes();
+    g_io_number_of_files = global_num_files;
+    g_io_number_of_partitions = global_num_partitions;
+    g_io_partitions_on_rank = global_num_partitions / tw_nnodes();
     l_io_init_flag = 1;
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_on_rank);
     }
 
-    // tw_eventq_alloc(&g_io_free_events, g_io_events_buffered_per_rank);
     g_io_free_events.size = 0;
     g_io_free_events.head = g_io_free_events.tail = NULL;
     g_io_buffered_events.size = 0;
     g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
 }
+
+// CALLED INDEPENDENTLY FROM EACH MPI RANK
+// PER-RANK LOCAL VALUES FOR num_partitions
+// ASSUME 1 FILE PER PROCESSOR
+void io_init_local(int local_num_partitions) {
+    int i;
+
+    assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
+
+    if (local_num_partitions == 0) {
+        local_num_partitions = 1;
+    }
+
+    g_io_number_of_files = tw_nnodes();
+    MPI_Allreduce(&local_num_partitions, &g_io_number_of_partitions, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    g_io_partitions_on_rank = local_num_partitions;
+    MPI_Exscan(&g_io_partitions_on_rank, &g_io_partitions_offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    l_io_init_flag = 1;
+    if (g_tw_mynode == 0) {
+        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\n", g_io_number_of_files, g_io_number_of_partitions);
+    }
+
+    g_io_free_events.size = 0;
+    g_io_free_events.head = g_io_free_events.tail = NULL;
+    g_io_buffered_events.size = 0;
+    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
+}
+
 
 void io_final() {
     g_io_number_of_files = 0;
@@ -103,7 +137,7 @@ void io_read_master_header(char * master_filename) {
     fscanf(master_header, "%d %d", &num_files, &num_partitions);
 
     if (!l_io_init_flag) {
-    	io_init(num_files, num_partitions);
+    	io_init_global(num_files, num_partitions);
     }
 
     assert(num_files == g_io_number_of_files && "Error: Master Header indicated a different number of files than was previously allocated\n");
@@ -149,7 +183,7 @@ void process_metadata(char * data_block, int mpi_rank) {
 }
 
 void io_load_checkpoint(char * master_filename) {
-    int i;
+    int i, cur_part, rc;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
@@ -160,7 +194,7 @@ void io_load_checkpoint(char * master_filename) {
 
     MPI_File fh;
     MPI_Status status;
-    char filename[100];
+    char filename[257];
 
     // Read MH
 
@@ -170,13 +204,18 @@ void io_load_checkpoint(char * master_filename) {
     MPI_Type_commit(&MPI_IO_PART);
     int partition_md_size;
     MPI_Type_size(MPI_IO_PART, &partition_md_size);
-    MPI_Offset offset = (long long) partition_md_size * mpi_rank * g_io_partitions_on_rank;
+    MPI_Offset offset = (long long) partition_md_size * g_io_partitions_offset;
+
 
     io_partition my_partitions[g_io_partitions_on_rank];
 
     sprintf(filename, "%s.mh", master_filename);
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (rc != 0) {
+        printf("ERROR: could not MPI_File_open %s\n", filename);
+    }
 	MPI_File_read_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+    MPI_File_close(&fh);
 
     // error check
     int count_sum = 0;
@@ -189,17 +228,22 @@ void io_load_checkpoint(char * master_filename) {
     offset = (long long) 0;
     long long contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
+    offset *= sizeof(size_t);
 
-    size_t model_sizes[g_tw_nlp];
+    size_t * model_sizes = (size_t *) calloc(g_tw_nlp, sizeof(size_t));
     int index = 0;
-    for (i = 0; i < g_io_partitions_on_rank; i++){
-        int data_count = my_partitions[i].lp_count;
-        MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
-        index += data_count;
-        offset += (long long) data_count;
-    }
 
+    sprintf(filename, "%s.lp", master_filename);
+    rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (rc != 0) {
+        printf("ERROR: could not MPI_File_open %s\n", filename);
+    }
+    for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++){
+        int data_count = my_partitions[cur_part].lp_count;
+        MPI_File_read_at(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        index += data_count;
+        offset += (long long) data_count * sizeof(size_t);
+    }
     MPI_File_close(&fh);
 
     // for (i = 0; i < g_io_partitions_on_rank; i++) {
@@ -208,45 +252,30 @@ void io_load_checkpoint(char * master_filename) {
     //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
     // }
 
-    // Now data files
-    for (i = 1; i < g_io_partitions_on_rank; i++) {
-        assert(my_partitions[i].file == my_partitions[0].file && "ERROR: Some rank has partitions spread across files\n");
-    }
+    // DATA FILES
+    int all_lp_i = 0;
+    for (cur_part = 0; cur_part < g_io_partitions_on_rank; cur_part++) {
+        // Read file
+        char buffer[my_partitions[cur_part].size];
+        void * b = buffer;
+        sprintf(filename, "%s.data-%d", master_filename, my_partitions[cur_part].file);
 
-    // Read file
-    MPI_Comm file_comm;
-    int file_number = my_partitions[0].file;
-    int partitions_size = 0;
-    for (i = 0; i < g_io_partitions_on_rank; i++) {
-        partitions_size += my_partitions[i].size;
-    }
-    char buffer[partitions_size];
-    void * b = buffer;
-    sprintf(filename, "%s.data-%d", master_filename, file_number);
-
-    MPI_Comm_split(MPI_COMM_WORLD, file_number, mpi_rank, &file_comm);
-    MPI_File_open(file_comm, filename, MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-
-    // FOR SOME REASON WE CAN'T DO A SINGLE READ OF MULTIPLE PARTITIONS
-    for (i = 0; i < g_io_partitions_on_rank; i++){
-        offset = (long long) my_partitions[i].offset;
-        MPI_File_read_at_all(fh, offset, b, my_partitions[i].size, MPI_BYTE, &status);
-        b += my_partitions[i].size;
-    }
-
-    MPI_File_close(&fh);
-
-    // Load Data
-    int p;
-    int l = 0;
-    for (p = 0, b = buffer; p < g_io_partitions_on_rank; p++) {
-        for (i = 0; i < my_partitions[p].lp_count; i++, l++) {
-            b += io_lp_deserialize(g_tw_lp[l], b);
-            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[l]->cur_state, b, g_tw_lp[l]);
-            b += model_sizes[l];
+        // Must use non-collectives, can't know status of other MPI-ranks
+        rc = MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+        if (rc != 0) {
+            printf("ERROR: could not MPI_File_open %s\n", filename);
         }
-        assert(my_partitions[p].ev_count <= g_io_free_events.size);
-        for (i = 0; i < my_partitions[p].ev_count; i++) {
+        MPI_File_read_at(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
+        MPI_File_close(&fh);
+
+        // Load Data
+        for (i = 0; i < my_partitions[cur_part].lp_count; i++, all_lp_i++) {
+            b += io_lp_deserialize(g_tw_lp[all_lp_i], b);
+            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[all_lp_i]->cur_state, b, g_tw_lp[all_lp_i]);
+            b += model_sizes[all_lp_i];
+        }
+        assert(my_partitions[cur_part].ev_count <= g_io_free_events.size);
+        for (i = 0; i < my_partitions[cur_part].ev_count; i++) {
             // SEND THESE EVENTS
             tw_event *ev = tw_eventq_pop(&g_io_free_events);
             b += io_event_deserialize(ev, b);
@@ -257,6 +286,8 @@ void io_load_checkpoint(char * master_filename) {
             tw_eventq_push(&g_io_buffered_events, ev);
         }
     }
+
+    free(model_sizes);
 
     return;
 }
@@ -288,125 +319,148 @@ void io_load_events(tw_pe * me) {
     g_tw_lookahead = original_lookahead;
 }
 
-void io_store_checkpoint(char * master_filename) {
-    int i;
+void io_store_multiple_partitions(char * master_filename, int append_flag, int data_file_number) {
+    int i, c, cur_kp;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
-    // ASSUMPTION: A checkpoint writes LP data (only)
-    // TODO: support event data writing
     assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     if (g_io_partitions_on_rank > 1) {
-        assert((g_tw_nkp % g_io_partitions_on_rank) == 0 && "Error: Writing a checkpoint with multiple partitions per rank with wrong number of KPs\n");
-        // TODO: lp to kp mapping??
+        // Assume each KP is becoming a partition
+        assert((g_tw_nkp == g_io_partitions_on_rank) && "Error: Writing a checkpoint with multiple partitions per rank with wrong number of KPs\n");
     }
-
-    // Gather LP size data
-    int lp_size = sizeof(io_lp_store);
-    size_t model_sizes[g_tw_nlp];
-    int sum_model_size = 0;
-
-    // always do this loop to allow for interleaved LP types in g_tw_lp
-    // TODO: add short cut for one-type, non-dynamic models?
-    for (i = 0; i < g_tw_nlp; i++) {
-        int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
-        model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[i]->cur_state, g_tw_lp[i]);
-        sum_model_size += model_sizes[i];
-    }
-
-    // Event Metadata
-    int event_count = g_io_buffered_events.size;
-    int sum_event_size = event_count * (g_tw_msg_sz + sizeof(io_event_store));
-
-    int sum_lp_size = g_tw_nlp * lp_size;
-    int sum_size = sum_lp_size + sum_model_size + sum_event_size;
-
-    // ** START Serialize **
-    char buffer[sum_size];
-    void * b;
-
-    // LPs
-    for (i = 0, b = buffer; i < g_tw_nlp; i++) {
-        b += io_lp_serialize(g_tw_lp[i], b);
-        int lp_type_index = g_tw_lp_typemap(g_tw_lp[i]->gid);
-        ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[i]->cur_state, b, g_tw_lp[i]);
-        b += model_sizes[i];
-    }
-
-    // Events
-    for (i = 0; i < event_count; i++) {
-        tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
-        b += io_event_serialize(ev, b);
-        void * msg = tw_event_data(ev);
-        memcpy(b, msg, g_tw_msg_sz);
-        tw_eventq_push(&g_io_free_events, ev);
-        b += g_tw_msg_sz;
-    }
-
-    g_io_partitions_on_rank = g_io_number_of_partitions / number_of_mpitasks;
-    int io_partitions_per_file = g_io_number_of_partitions / g_io_number_of_files;
-    int io_ranks_per_file = number_of_mpitasks / g_io_number_of_files;
 
     // Set up Comms
     MPI_File fh;
     MPI_Status status;
     MPI_Comm file_comm;
-
-    int file_number = mpi_rank / io_ranks_per_file;
-    int file_position = mpi_rank % io_ranks_per_file;
+    int file_number = data_file_number;
+    MPI_Comm_split(MPI_COMM_WORLD, file_number, 0, &file_comm);
     MPI_Offset offset = (long long) 0;
-    long long contribute = (long long) sum_size;
 
-    MPI_Comm_split(MPI_COMM_WORLD, file_number, file_position, &file_comm);
-    MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
-
-    // Write
-    char filename[100];
+    char filename[256];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
-    MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-    MPI_File_write_at_all(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
-    MPI_File_close(&fh);
 
-    // each rank fills in its local partition data
+    // ASSUMPTION FOR MULTIPLE PARTS-PER-RANK
+    // Each MPI-Rank gets its own file
     io_partition my_partitions[g_io_partitions_on_rank];
-    for (i = 0; i < g_io_partitions_on_rank; ++i) {
-        my_partitions[i].part = (mpi_rank * g_io_partitions_on_rank) + i;
-        my_partitions[i].file = file_number;
-        my_partitions[i].offset = offset;
-        my_partitions[i].size = sum_size;
-        my_partitions[i].lp_count = g_tw_nlp / g_io_partitions_on_rank;
-        my_partitions[i].ev_count = event_count;
+
+    size_t all_lp_sizes[g_tw_nlp];
+    int all_lp_i = 0;
+
+    for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
+        int lps_on_kp = g_tw_kp[cur_kp]->lp_count;
+
+        // Gather LP size data
+        int lp_size = sizeof(io_lp_store);
+        size_t model_sizes[lps_on_kp];
+        int sum_model_size = 0;
+
+        // always do this loop to allow for interleaved LP types in g_tw_lp
+        // TODO: add short cut for one-type, non-dynamic models?
+        for (c = 0, i = 0; c < g_tw_nlp; c++) {
+            if (g_tw_lp[c]->kp->id == cur_kp) {
+                int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
+                model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[c]->cur_state, g_tw_lp[c]);
+                sum_model_size += model_sizes[i];
+                all_lp_sizes[all_lp_i] = model_sizes[i];
+                i++;
+                all_lp_i++;
+            }
+        }
+
+        int event_count = 0;
+        int sum_event_size = 0;
+        if (cur_kp == 0) {
+            // Event Metadata
+            int event_count = g_io_buffered_events.size;
+            int sum_event_size = event_count * (g_tw_msg_sz + sizeof(io_event_store));
+        }
+
+        int sum_lp_size = lps_on_kp * lp_size;
+        int sum_size = sum_lp_size + sum_model_size + sum_event_size;
+
+        // ** START Serialize **
+        char buffer[sum_size];
+        void * b;
+
+        // LPs
+        for (c = 0, i = 0, b = buffer; c < g_tw_nlp; c++) {
+            if (g_tw_lp[c]->kp->id == cur_kp) {
+                b += io_lp_serialize(g_tw_lp[c], b);
+                int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
+                ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[c]->cur_state, b, g_tw_lp[c]);
+                b += model_sizes[i];
+                i++;
+            }
+        }
+
+        // Events
+        for (i = 0; i < event_count; i++) {
+            tw_event *ev = tw_eventq_pop(&g_io_buffered_events);
+            b += io_event_serialize(ev, b);
+            void * msg = tw_event_data(ev);
+            memcpy(b, msg, g_tw_msg_sz);
+            tw_eventq_push(&g_io_free_events, ev);
+            b += g_tw_msg_sz;
+        }
+
+        // Write
+        // in this case each MPI rank gets its own file
+        int file_position = 0;
+        MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_WRONLY | MPI_MODE_APPEND, MPI_INFO_NULL, &fh);
+        MPI_File_write(fh, &buffer, sum_size, MPI_BYTE, &status);
+        MPI_File_close(&fh);
+
+        my_partitions[cur_kp].part = cur_kp;
+        my_partitions[cur_kp].file = file_number;
+        my_partitions[cur_kp].offset = offset;
+        my_partitions[cur_kp].size = sum_size;
+        my_partitions[cur_kp].lp_count = lps_on_kp;
+        my_partitions[cur_kp].ev_count = event_count;
+
+        offset += (long long) sum_size;
     }
 
+    MPI_Comm_free(&file_comm);
+
+    int amode;
+    if (append_flag) {
+        amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR | MPI_MODE_APPEND;
+    } else {
+        amode = MPI_MODE_CREATE | MPI_MODE_UNIQUE_OPEN | MPI_MODE_RDWR;
+    }
+
+    // Write Metadata
     MPI_Datatype MPI_IO_PART;
     MPI_Type_contiguous(io_partition_field_count, MPI_INT, &MPI_IO_PART);
     MPI_Type_commit(&MPI_IO_PART);
 
-    // for (i = 0; i < g_io_partitions_on_rank; i++) {
-    //     printf("Rank %d wrote metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-    //         my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-    //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
-    // }
     int psize;
     MPI_Type_size(MPI_IO_PART, &psize);
-    // printf("Metadata size: %d or %lu\n", psize, sizeof(io_partition));
 
     offset = (long long) sizeof(io_partition) * g_io_partitions_on_rank * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-    MPI_File_write_at_all(fh, offset, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+    MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
+    MPI_File_write(fh, &my_partitions, g_io_partitions_on_rank, MPI_IO_PART, &status);
+    MPI_File_close(&fh);
 
     // Write model size array
     offset = (long long) 0;
-    contribute = (long long) g_tw_nlp;
+    MPI_Offset contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    offset += (long long) (sizeof(io_partition) * g_io_number_of_partitions);
-    MPI_File_write_at_all(fh, offset, model_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
+    sprintf(filename, "%s.lp", master_filename);
+    MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
+    MPI_File_write(fh, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
+    if (append_flag == 1) {
+        printf("%d parts written\n", g_io_partitions_on_rank);
+    }
+
     // WRITE READ ME
-    if (mpi_rank == 0) {
+    if (mpi_rank == 0 && (append_flag == 0 || data_file_number == 0) ) {
         FILE *file;
         sprintf(filename, "%s.read-me.txt", master_filename);
         file = fopen(filename, "w");
@@ -425,8 +479,13 @@ void io_store_checkpoint(char * master_filename) {
 #endif
         fprintf(file, "MODEL Version:\t%s\n", model_version);
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
-        fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
-        fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
+        if (append_flag == 0) {
+            fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
+            fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
+        } else {
+            fprintf(file, "Data Files:\t%d+?\n", g_io_number_of_files);
+            fprintf(file, "Partitions:\t%d+?\n", g_io_number_of_partitions);
+        }
 #ifdef RAND_NORMAL
         fprintf(file, "RAND_NORMAL\tON\n");
 #else
