@@ -1,13 +1,6 @@
 PROJECT(RIO)
 
-SET(rio_srcs io.h)
-
-OPTION(USE_MPI_IO "Use MPI for I/O operations? Defaults to POSIX" ON)
-IF(USE_MPI_IO)
-	SET(rio_srcs ${rio_srcs} io-mpi.c)
-ELSE(USE_MPI_IO)
-	SET(rio_srcs ${rio_srcs} io-posix.c)
-ENDIF(USE_MPI_IO)
+SET(rio_srcs io.h io-mpi.c)
 
 ## Print RIO Git Hash
 LIST(APPEND CMAKE_MODULE_PATH "${ROSS_SOURCE_DIR}/cmake/")
