@@ -284,8 +284,13 @@ void io_store_multiple_partitions(char * master_filename, int append_flag, int d
     MPI_Status status;
     MPI_Comm file_comm;
     int file_number = data_file_number;
-    MPI_Comm_split(MPI_COMM_WORLD, file_number, 0, &file_comm);
-    MPI_Offset offset = (long long) 0;
+    int file_comm_count;
+
+    MPI_Comm_split(MPI_COMM_WORLD, file_number, g_tw_mynode, &file_comm);
+    MPI_Comm_size(file_comm, &file_comm_count);
+
+    MPI_Offset offset;
+    long long contribute = 0;
 
     char filename[256];
     sprintf(filename, "%s.data-%d", master_filename, file_number);
