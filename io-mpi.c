@@ -69,6 +69,13 @@ tw_event * io_event_grab(tw_pe *pe) {
     return e;
 }
 
+static void io_init_event_buffers() {
+    g_io_free_events.size = 0;
+    g_io_free_events.head = g_io_free_events.tail = NULL;
+    g_io_buffered_events.size = 0;
+    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
+}
+
 // IDENTICALLY CALLED FROM EACH MPI RANK
 // SUM TOTAL GLOBAL VALUES FOR num_files AND num_partitions ON EACH RANK
 void io_init_global(int global_num_files, int global_num_partitions) {
@@ -88,10 +95,7 @@ void io_init_global(int global_num_files, int global_num_partitions) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\tPartsPerRank: %d\n\n", g_io_number_of_files, g_io_number_of_partitions, g_io_partitions_on_rank);
     }
 
-    g_io_free_events.size = 0;
-    g_io_free_events.head = g_io_free_events.tail = NULL;
-    g_io_buffered_events.size = 0;
-    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
+    io_init_event_buffers();
 }
 
 // CALLED INDEPENDENTLY FROM EACH MPI RANK
@@ -115,10 +119,7 @@ void io_init_local(int local_num_partitions) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\n", g_io_number_of_files, g_io_number_of_partitions);
     }
 
-    g_io_free_events.size = 0;
-    g_io_free_events.head = g_io_free_events.tail = NULL;
-    g_io_buffered_events.size = 0;
-    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
+    io_init_event_buffers();
 }
 
 
