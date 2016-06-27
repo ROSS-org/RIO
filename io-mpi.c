@@ -128,23 +128,6 @@ void io_final() {
     l_io_init_flag = 0;
 }
 
-void process_metadata(char * data_block, int mpi_rank) {
-    int i, offset, count;
-    int partition_number;
-
-    printf("Rank %ld scanning line \"%s\"\n", g_tw_mynode, data_block);
-
-    for (i = 0; i < g_io_partitions_on_rank; i++) {
-        count = sscanf(data_block, "%d %d %d %d %d %d%n",
-            &partition_number, &g_io_partitions[i].file, &g_io_partitions[i].offset,
-            &g_io_partitions[i].size, &g_io_partitions[i].lp_count, &g_io_partitions[i].ev_count,
-            &offset);
-        assert(count == 7 && "Error: could not read correct number of ints during partition_metadata processing\n");
-        assert(partition_number == (mpi_rank * g_io_partitions_on_rank) + i && "Error: an MPI Task is reading the metadata from an unexpected partition\n");
-        data_block += offset;
-    }
-}
-
 void io_load_checkpoint(char * master_filename) {
     int i, cur_part, rc;
     int mpi_rank = g_tw_mynode;
