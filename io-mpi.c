@@ -357,22 +357,26 @@ void io_store(char * master_filename, int data_file_number) {
         offset = (long long) 0;
     }
 
+    int global_lp_i = 0;
     for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
 
         // ** START Serialize **
 
-        sum_size = my_partitions[cur_kp].size;
+        int sum_size = my_partitions[cur_kp].size;
+        int event_count = my_partitions[cur_kp].ev_count;
+        int lps_on_kp = my_partitions[cur_kp].lp_count;
+
         char buffer[sum_size];
         void * b;
 
         // LPs
-        for (c = 0, i = 0, b = buffer; c < g_tw_nlp; c++) {
+        for (c = 0, b = buffer; c < g_tw_nlp; c++) {
             if (g_tw_lp[c]->kp->id == cur_kp) {
                 b += io_lp_serialize(g_tw_lp[c], b);
                 int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
                 ((serialize_f)g_io_lp_types[lp_type_index].serialize)(g_tw_lp[c]->cur_state, b, g_tw_lp[c]);
-                b += model_sizes[i];
-                i++;
+                b += all_lp_sizes[global_lp_i];
+                global_lp_i++;
             }
         }
 
@@ -420,7 +424,7 @@ void io_store(char * master_filename, int data_file_number) {
 
     // Write model size array
     offset = (long long) 0;
-    MPI_Offset contribute = (long long) g_tw_nlp;
+    contribute = (long long) g_tw_nlp;
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     sprintf(filename, "%s.lp", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
