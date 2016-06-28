@@ -32,7 +32,6 @@ extern int g_io_events_buffered_per_rank;
 
 void io_register_model_version(char *sha1);
 void io_init(int global_num_files);
-void io_final();
 
 void io_load_checkpoint(char * master_filename);
 void io_load_events(tw_pe * me);
@@ -82,6 +81,10 @@ typedef struct {
 } io_event_store;
 
 extern io_partition * g_io_partitions;
+
+// Functions Called Directly from ROSS
+void io_load_events(tw_pe * me);
+void io_read_checkpoint();
 
 // SERIALIZE FUNCTIONS for LP and EVENT structs
 // found in io-serialize.c

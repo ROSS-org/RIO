@@ -98,11 +98,6 @@ static void io_appending_job() {
     }
 }
 
-void io_final() {
-    g_io_number_of_files = 0;
-    l_io_init_flag = 0;
-}
-
 void io_load_checkpoint(char * master_filename) {
     int i, cur_part, rc;
     int mpi_rank = g_tw_mynode;
