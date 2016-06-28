@@ -243,6 +243,8 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     int i, c, cur_kp;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
+    int rank_events = 0;
+    int rank_lps = 0;
 
     assert(g_io_number_of_files != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
@@ -305,6 +307,8 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         my_partitions[cur_kp].ev_count = event_count;
 
         contribute += sum_size;
+        rank_events += event_count;
+        rank_lps += lps_on_kp;
     }
 
     // MPI EXSCAN FOR OFFSET
@@ -396,6 +400,11 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         printf("%lu parts written\n", g_tw_nkp);
     }
 
+    int global_events = 0;
+    int global_lps = 0;
+    MPI_Reduce(&rank_events, &global_events, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&rank_lps, &global_lps, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
     // WRITE READ ME
     if (mpi_rank == 0 && (l_io_append_flag == 0 || data_file_number == 0) ) {
         FILE *file;
@@ -430,6 +439,15 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 #else
         fprintf(file, "RAND_NORMAL\tOFF\n");
 #endif
+
+        if (l_io_append_flag == 0) {
+            fprintf(file, "Total Events:\t%d\n", global_events);
+            fprintf(file, "Total LPs:\t%d\n", global_lps);
+        } else {
+            fprintf(file, "Total Events:\t%d+?\n", global_events);
+            fprintf(file, "Total LPs:\t%d+?\n", global_lps);
+        }
+
         fprintf(file, "\n## RUN TIME SETTINGS by GROUP:\n\n");
         tw_opt_settings(file);
     }
