@@ -12,7 +12,7 @@
 extern int g_io_number_of_files;
 
 // Register opts with ROSS
-extern const tw_optdef io_opts[5];
+extern const tw_optdef io_opts[3];
 
 enum io_load_e {
 	NONE,		// don't from checkpoint
