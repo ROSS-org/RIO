@@ -291,8 +291,8 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         int sum_event_size = 0;
         if (cur_kp == 0) {
             // Event Metadata
-            int event_count = g_io_buffered_events.size;
-            int sum_event_size = event_count * (g_tw_msg_sz + sizeof(io_event_store));
+            event_count = g_io_buffered_events.size;
+            sum_event_size = event_count * (g_tw_msg_sz + sizeof(io_event_store));
         }
 
         int sum_lp_size = lps_on_kp * lp_size;
