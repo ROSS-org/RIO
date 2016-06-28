@@ -74,7 +74,7 @@ static void io_init_event_buffers() {
     g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
 }
 
-void io_init(int global_num_files) {
+void io_init() {
     int i;
 
     assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
