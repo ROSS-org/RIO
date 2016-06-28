@@ -7,10 +7,6 @@
 
 // ** Global IO System variables ** //
 
-// Set with command line --io-parts
-// should be consistent across the system
-extern int g_io_number_of_partitions;
-
 // Set with command line --io-files
 // should be consistent across the system
 extern int g_io_number_of_files;
@@ -35,8 +31,7 @@ extern int g_io_events_buffered_per_rank;
 // ** API Functions, Types, and Variables ** //
 
 void io_register_model_version(char *sha1);
-void io_init_global(int global_num_files, int global_num_partitions);
-void io_init_local(int local_num_partitions);
+void io_init(int global_num_files);
 void io_final();
 
 void io_load_checkpoint(char * master_filename);

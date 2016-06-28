@@ -14,8 +14,8 @@ io_partition * g_io_partitions;
 
 // Default Values
 int g_io_number_of_files = 0;
-int g_io_number_of_partitions = 0;
-int g_io_partitions_offset = 0;
+unsigned long l_io_total_parts = 0;
+unsigned long g_io_partitions_offset = 0;
 io_lptype * g_io_lp_types = NULL;
 io_load_type g_io_load_at = NONE;
 char g_io_checkpoint_name[1024];
@@ -31,7 +31,6 @@ static int l_io_append_flag = 0;
 const tw_optdef io_opts[] = {
     TWOPT_GROUP("RIO"),
     TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
-    TWOPT_UINT("io-parts", g_io_number_of_partitions, "io partitions"),
     TWOPT_END()
 };
 
@@ -75,45 +74,17 @@ static void io_init_event_buffers() {
     g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
 }
 
-// IDENTICALLY CALLED FROM EACH MPI RANK
-// SUM TOTAL GLOBAL VALUES FOR num_files AND num_partitions ON EACH RANK
-void io_init_global(int global_num_files, int global_num_partitions) {
+void io_init(int global_num_files) {
     int i;
 
     assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
-
-    if (global_num_partitions == 0) {
-        global_num_partitions = tw_nnodes();
-    }
 
     g_io_number_of_files = global_num_files;
-    g_io_number_of_partitions = global_num_partitions;
     l_io_init_flag = 1;
+    MPI_Exscan(&g_tw_nkp, &g_io_partitions_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Reduce(&g_tw_nkp, &l_io_total_parts, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     if (g_tw_mynode == 0) {
-        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\n", g_io_number_of_files, g_io_number_of_partitions);
-    }
-
-    io_init_event_buffers();
-}
-
-// CALLED INDEPENDENTLY FROM EACH MPI RANK
-// PER-RANK LOCAL VALUES FOR num_partitions
-// ASSUME 1 FILE PER PROCESSOR
-void io_init_local(int local_num_partitions) {
-    int i;
-
-    assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
-
-    if (local_num_partitions == 0) {
-        local_num_partitions = 1;
-    }
-
-    g_io_number_of_files = tw_nnodes();
-    MPI_Allreduce(&local_num_partitions, &g_io_number_of_partitions, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Exscan(&g_tw_nkp, &g_io_partitions_offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    l_io_init_flag = 1;
-    if (g_tw_mynode == 0) {
-        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %d\n\n", g_io_number_of_files, g_io_number_of_partitions);
+        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l_io_total_parts);
     }
 
     io_init_event_buffers();
@@ -129,7 +100,6 @@ static void io_appending_job() {
 
 void io_final() {
     g_io_number_of_files = 0;
-    g_io_number_of_partitions = 0;
     l_io_init_flag = 0;
 }
 
@@ -139,7 +109,7 @@ void io_load_checkpoint(char * master_filename) {
     int number_of_mpitasks = tw_nnodes();
 
     // assert that IO system has been init
-    assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "ERROR: IO variables not set: # of files or # of parts\n");
+    assert(g_io_number_of_files != 0 && "ERROR: IO variables not set: # of files\n");
 
     // TODO: check to make sure io system is init'd?
 
@@ -275,7 +245,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
 
-    assert(g_io_number_of_files != 0 && g_io_number_of_partitions != 0 && "Error: IO variables not set: # of file or # of parts\n");
+    assert(g_io_number_of_files != 0 && "Error: IO variables not set: # of file or # of parts\n");
 
     // Set up Comms
     MPI_File fh;
@@ -420,7 +390,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     MPI_File_close(&fh);
 
     if (l_io_append_flag == 1) {
-        printf("%d parts written\n", g_tw_nkp);
+        printf("%lu parts written\n", g_tw_nkp);
     }
 
     // WRITE READ ME
@@ -447,10 +417,10 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
         if (l_io_append_flag == 0) {
             fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
-            fprintf(file, "Partitions:\t%d\n", g_io_number_of_partitions);
+            fprintf(file, "Partitions:\t%lu\n", l_io_total_parts);
         } else {
             fprintf(file, "Data Files:\t%d+?\n", g_io_number_of_files);
-            fprintf(file, "Partitions:\t%d+?\n", g_io_number_of_partitions);
+            fprintf(file, "Partitions:\t%lu+?\n", l_io_total_parts);
         }
 #ifdef RAND_NORMAL
         fprintf(file, "RAND_NORMAL\tON\n");
