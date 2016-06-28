@@ -15,7 +15,7 @@ extern int g_io_number_of_files;
 extern const tw_optdef io_opts[3];
 
 enum io_load_e {
-	NONE,		// don't from checkpoint
+	NONE,		// default value
 	PRE_INIT,	// load LPs then lp->init
 	INIT,		// load LPs instead lp->init
 	POST_INIT,	// load LPs after lp->init
@@ -33,8 +33,7 @@ extern int g_io_events_buffered_per_rank;
 void io_register_model_version(char *sha1);
 void io_init();
 
-void io_load_checkpoint(char * master_filename);
-void io_load_events(tw_pe * me);
+void io_load_checkpoint(char * master_filename, io_load_type load_at);
 void io_store_checkpoint(char * master_filename, int data_file_number);
 
 // LP type map and function struct

@@ -97,7 +97,12 @@ static void io_appending_job() {
     }
 }
 
-void io_load_checkpoint(char * master_filename) {
+void io_load_checkpoint(char * master_filename, io_load_type load_at) {
+    strcpy(g_io_checkpoint_name, master_filename);
+    g_io_load_at = load_at;
+}
+
+void io_read_checkpoint() {
     int i, cur_part, rc;
     int mpi_rank = g_tw_mynode;
     int number_of_mpitasks = tw_nnodes();
@@ -124,7 +129,7 @@ void io_load_checkpoint(char * master_filename) {
 
     io_partition my_partitions[g_tw_nkp];
 
-    sprintf(filename, "%s.mh", master_filename);
+    sprintf(filename, "%s.mh", g_io_checkpoint_name);
     rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (rc != 0) {
         printf("ERROR: could not MPI_File_open %s\n", filename);
@@ -148,7 +153,7 @@ void io_load_checkpoint(char * master_filename) {
     size_t * model_sizes = (size_t *) calloc(g_tw_nlp, sizeof(size_t));
     int index = 0;
 
-    sprintf(filename, "%s.lp", master_filename);
+    sprintf(filename, "%s.lp", g_io_checkpoint_name);
     rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (rc != 0) {
         printf("ERROR: could not MPI_File_open %s\n", filename);
@@ -173,7 +178,7 @@ void io_load_checkpoint(char * master_filename) {
         // Read file
         char buffer[my_partitions[cur_part].size];
         void * b = buffer;
-        sprintf(filename, "%s.data-%d", master_filename, my_partitions[cur_part].file);
+        sprintf(filename, "%s.data-%d", g_io_checkpoint_name, my_partitions[cur_part].file);
 
         // Must use non-collectives, can't know status of other MPI-ranks
         rc = MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
