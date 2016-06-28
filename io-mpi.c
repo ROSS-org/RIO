@@ -319,6 +319,10 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
         // ** START Serialize **
 
+        // printf("Rank %d storing metadata\n\tpart %d\n\tfile %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+        //     my_partitions[cur_kp].part, my_partitions[cur_kp].file,
+        //     my_partitions[cur_kp].size, my_partitions[cur_kp].lp_count, my_partitions[cur_kp].ev_count);
+
         int sum_size = my_partitions[cur_kp].size;
         int event_count = my_partitions[cur_kp].ev_count;
         int lps_on_kp = my_partitions[cur_kp].lp_count;
