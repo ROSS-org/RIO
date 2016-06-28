@@ -78,9 +78,8 @@ void io_init() {
     int i;
 
     assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
-
-    g_io_number_of_files = global_num_files;
     l_io_init_flag = 1;
+
     MPI_Exscan(&g_tw_nkp, &g_io_partitions_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Reduce(&g_tw_nkp, &l_io_total_parts, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     if (g_tw_mynode == 0) {
