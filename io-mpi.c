@@ -13,8 +13,8 @@
 io_partition * g_io_partitions;
 
 // Default Values
-int g_io_number_of_files = 0;
 unsigned long l_io_total_parts = 0;
+int g_io_number_of_files = 1;
 unsigned long g_io_partitions_offset = 0;
 io_lptype * g_io_lp_types = NULL;
 io_load_type g_io_load_at = NONE;
