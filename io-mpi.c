@@ -13,7 +13,6 @@
 io_partition * g_io_partitions;
 
 // Default Values
-unsigned long l_io_total_parts = 0;
 int g_io_number_of_files = 1;
 unsigned long g_io_partitions_offset = 0;
 io_lptype * g_io_lp_types = NULL;
@@ -24,6 +23,7 @@ tw_eventq g_io_buffered_events;
 tw_eventq g_io_free_events;
 
 // Local Variables
+static unsigned long l_io_total_parts = 0;
 static int l_io_init_flag = 0;
 static int l_io_append_flag = 0;
 
