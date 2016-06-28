@@ -31,7 +31,7 @@ extern int g_io_events_buffered_per_rank;
 // ** API Functions, Types, and Variables ** //
 
 void io_register_model_version(char *sha1);
-void io_init(int global_num_files);
+void io_init();
 
 void io_load_checkpoint(char * master_filename);
 void io_load_events(tw_pe * me);
