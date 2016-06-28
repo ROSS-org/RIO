@@ -15,11 +15,6 @@ extern int g_io_number_of_partitions;
 // should be consistent across the system
 extern int g_io_number_of_files;
 
-// Set with command line --io-ppr
-// If set with command line, should be consistent across system
-// otherwise it can vary by rank (uneven load)
-extern int g_io_partitions_on_rank;
-
 // Register opts with ROSS
 extern const tw_optdef io_opts[5];
 
