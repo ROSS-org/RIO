@@ -314,18 +314,15 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
         // Gather LP size data
         int lp_size = sizeof(io_lp_store);
-        size_t model_sizes[lps_on_kp];
         int sum_model_size = 0;
 
         // always do this loop to allow for interleaved LP types in g_tw_lp
         // TODO: add short cut for one-type, non-dynamic models?
-        for (c = 0, i = 0; c < g_tw_nlp; c++) {
+        for (c = 0; c < g_tw_nlp; c++) {
             if (g_tw_lp[c]->kp->id == cur_kp) {
                 int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
-                model_sizes[i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[c]->cur_state, g_tw_lp[c]);
-                sum_model_size += model_sizes[i];
-                all_lp_sizes[all_lp_i] = model_sizes[i];
-                i++;
+                all_lp_sizes[all_lp_i] = ((model_size_f)g_io_lp_types[lp_type_index].model_size)(g_tw_lp[c]->cur_state, g_tw_lp[c]);
+                sum_model_size += all_lp_sizes[all_lp_i];
                 all_lp_i++;
             }
         }
