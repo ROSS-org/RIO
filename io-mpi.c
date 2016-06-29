@@ -9,11 +9,16 @@
 #include "ross.h"
 #include "io-config.h"
 
-// Null Initializations
-io_partition * g_io_partitions;
-
-// Default Values
+// Command Line Options
 int g_io_number_of_files = 1;
+const tw_optdef io_opts[] = {
+    TWOPT_GROUP("RIO"),
+    TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
+    TWOPT_END()
+};
+
+// User-Set Variable Initializations
+io_partition * g_io_partitions;
 io_lptype * g_io_lp_types = NULL;
 io_load_type g_io_load_at = NONE;
 char g_io_checkpoint_name[1024];
@@ -22,18 +27,12 @@ tw_eventq g_io_buffered_events;
 tw_eventq g_io_free_events;
 
 // Local Variables
-static unsigned long l_io_kp_offset = 0;
-static unsigned long l_io_lp_offset = 0;
-static unsigned long l_io_total_parts = 0;
+static unsigned long l_io_kp_offset = 0;    // MPI_Exscan
+static unsigned long l_io_lp_offset = 0;    // MPI_Exscan
+static unsigned long l0_io_total_kp = 0;    // MPI_Reuced on 0
+static unsigned long l0_io_total_lp = 0;    // MPI_Reuced on 0
 static int l_io_init_flag = 0;
 static int l_io_append_flag = 0;
-
-// Command Line Options
-const tw_optdef io_opts[] = {
-    TWOPT_GROUP("RIO"),
-    TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
-    TWOPT_END()
-};
 
 char model_version[41];
 
@@ -76,7 +75,8 @@ void io_init() {
 
     MPI_Exscan(&g_tw_nkp, &l_io_kp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Exscan(&g_tw_nlp, &l_io_lp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Reduce(&g_tw_nkp, &l_io_total_parts, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&g_tw_nkp, &l0_io_total_kp, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&g_tw_nlp, &l0_io_total_lp, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l_io_total_parts);
     }
@@ -396,7 +396,6 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     int global_events = 0;
     int global_lps = 0;
     MPI_Reduce(&rank_events, &global_events, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&rank_lps, &global_lps, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // WRITE READ ME
     if (mpi_rank == 0 && (l_io_append_flag == 0 || data_file_number == 0) ) {
