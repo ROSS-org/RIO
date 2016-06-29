@@ -217,7 +217,8 @@ void io_load_events(tw_pe * me) {
         me->cur_event->caused_by_me = NULL;
 
         tw_event *e = tw_eventq_pop(&g_io_buffered_events);
-        tw_event *n = tw_event_new(e->dest_lp, e->recv_ts, e->src_lp);
+        // e->dest_lp will be a GID after being loaded from checkpoint
+        tw_event *n = tw_event_new((tw_lpid)e->dest_lp, e->recv_ts, e->src_lp);
         void *emsg = tw_event_data(e);
         void *nmsg = tw_event_data(n);
         memcpy(&(n->cv), &(e->cv), sizeof(tw_bf));

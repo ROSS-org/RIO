@@ -53,7 +53,7 @@ size_t io_event_serialize (tw_event *e, void *buffer) {
     io_event_store tmp;
 
     memcpy(&(tmp.cv), &(e->cv), sizeof(tw_bf));
-    tmp.dest_lp = e->dest_lp; // dest_lp is gid
+    tmp.dest_lp = (tw_lpid)e->dest_lp; // ROSS HACK: dest_lp is gid
     tmp.src_lp = e->src_lp->gid;
     tmp.recv_ts = e->recv_ts - g_tw_ts_end;
 
@@ -69,7 +69,7 @@ size_t io_event_deserialize (tw_event *e, void *buffer) {
     memcpy(&tmp, buffer, sizeof(io_event_store));
 
     memcpy(&(e->cv), &(tmp.cv), sizeof(tw_bf));
-    e->dest_lp = tmp.dest_lp;
+    e->dest_lp = (tw_lp *) tmp.dest_lp; // ROSS HACK: e->dest_lp is GID for a bit
     //undo pointer to GID conversion
     if (g_tw_mapping == LINEAR) {
         e->src_lp = g_tw_lp[((tw_lpid)tmp.src_lp) - g_tw_lp_offset];
