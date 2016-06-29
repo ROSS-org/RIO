@@ -88,7 +88,7 @@ void io_init() {
 }
 
 // This run is part of a larger set of DISPARATE runs
-// append the .mh and .lp files
+// append the .md and .lp files
 static void io_appending_job() {
     if (l_io_init_flag == 1) {
         l_io_append_flag = 1;
@@ -126,7 +126,7 @@ void io_read_checkpoint() {
 
     io_partition my_partitions[g_tw_nkp];
 
-    sprintf(filename, "%s.mh", g_io_checkpoint_name);
+    sprintf(filename, "%s.rio-md", g_io_checkpoint_name);
     rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (rc != 0) {
         printf("ERROR: could not MPI_File_open %s\n", filename);
@@ -152,7 +152,7 @@ void io_read_checkpoint() {
     size_t * model_sizes = (size_t *) calloc(g_tw_nlp, sizeof(size_t));
     int index = 0;
 
-    sprintf(filename, "%s.lp", g_io_checkpoint_name);
+    sprintf(filename, "%s.rio-lp", g_io_checkpoint_name);
     rc = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (rc != 0) {
         printf("ERROR: could not MPI_File_open %s\n", filename);
@@ -171,7 +171,7 @@ void io_read_checkpoint() {
         // Read file
         char buffer[my_partitions[cur_part].size];
         void * b = buffer;
-        sprintf(filename, "%s.data-%d", g_io_checkpoint_name, my_partitions[cur_part].file);
+        sprintf(filename, "%s.rio-data-%d", g_io_checkpoint_name, my_partitions[cur_part].file);
 
         // Must use non-collectives, can't know status of other MPI-ranks
         rc = MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
@@ -256,7 +256,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     long long contribute = 0;
 
     char filename[256];
-    sprintf(filename, "%s.data-%d", master_filename, file_number);
+    sprintf(filename, "%s.rio-data-%d", master_filename, file_number);
 
     // ASSUMPTION FOR MULTIPLE PARTS-PER-RANK
     // Each MPI-Rank gets its own file
@@ -372,7 +372,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     MPI_Type_size(MPI_IO_PART, &psize);
 
     offset = (long long) sizeof(io_partition) * l_io_kp_offset;
-    sprintf(filename, "%s.mh", master_filename);
+    sprintf(filename, "%s.rio-md", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
     MPI_File_close(&fh);
@@ -385,7 +385,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
     // Write model size array
     offset = sizeof(size_t) * l_io_lp_offset;
-    sprintf(filename, "%s.lp", master_filename);
+    sprintf(filename, "%s.rio-lp", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
