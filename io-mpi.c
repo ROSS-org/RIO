@@ -409,9 +409,10 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 #if HAVE_CTIME
         time_t raw_time;
         time(&raw_time);
-        fprintf(file, "Date Created:\t%s\n", ctime(&raw_time));
+        fprintf(file, "Date Created:\t%s", ctime(&raw_time));
 #endif
-        fprintf(file, "## BUILD CONFIGURATION\n\n");
+
+        fprintf(file, "\n## Version Information\n\n");
 #ifdef ROSS_VERSION
         fprintf(file, "ROSS Version:\t%s\n", ROSS_VERSION);
 #endif
@@ -419,29 +420,49 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         fprintf(file, "RIO Version:\t%s\n", RIO_VERSION);
 #endif
         fprintf(file, "MODEL Version:\t%s\n", model_version);
-        fprintf(file, "Checkpoint:\t%s\n", master_filename);
+
+        fprintf(file, "\n## CHECKPOINT INFORMATION\n\n");
+        fprintf(file, "Name:\t\t%s\n", master_filename);
         if (l_io_append_flag == 0) {
             fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
             fprintf(file, "Partitions:\t%lu\n", l0_io_total_kp);
+            fprintf(file, "Total Events:\t%d\n", global_events);
+            fprintf(file, "Total LPs:\t%lu\n", l0_io_total_lp);
         } else {
+            fprintf(file, "Append Flag:\tON\n");
             fprintf(file, "Data Files:\t%d+?\n", g_io_number_of_files);
             fprintf(file, "Partitions:\t%lu+?\n", l0_io_total_kp);
+            fprintf(file, "Total Events:\t%d+?\n", global_events);
+            fprintf(file, "Total LPs:\t%lu+?\n", l0_io_total_lp);
         }
+
+
+        fprintf(file, "\n## BUILD SETTINGS\n\n");
 #ifdef RAND_NORMAL
         fprintf(file, "RAND_NORMAL\tON\n");
 #else
         fprintf(file, "RAND_NORMAL\tOFF\n");
 #endif
+#ifdef ROSS_CLOCK_i386
+        fprintf(file, "ARCH:\t\ti386\n");
+#endif
+#ifdef ROSS_CLOCK_amd64
+        fprintf(file, "ARCH:\t\tx86_64\n");
+#endif
+#ifdef ROSS_CLOCK_ia64
+        fprintf(file, "ARCH:\t\tia64\n");
+#endif
+#ifdef ROSS_CLOCK_ppc
+        fprintf(file, "ARCH:\t\tPPC 64\n");
+#endif
+#ifdef ROSS_CLOCK_bgl
+        fprintf(file, "ARCH:\t\tBG/L\n");
+#endif
+#ifdef ROSS_CLOCK_bgq
+        fprintf(file, "ARCH:\t\tBG/Q\n");
+#endif
 
-        if (l_io_append_flag == 0) {
-            fprintf(file, "Total Events:\t%d\n", global_events);
-            fprintf(file, "Total LPs:\t%lu\n", l0_io_total_lp);
-        } else {
-            fprintf(file, "Total Events:\t%d+?\n", global_events);
-            fprintf(file, "Total LPs:\t%lu+?\n", l0_io_total_lp);
-        }
-
-        fprintf(file, "\n## RUN TIME SETTINGS by GROUP:\n\n");
+        fprintf(file, "\n## RUN TIME SETTINGS\n\n");
         tw_opt_settings(file);
     }
 }
