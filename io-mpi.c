@@ -68,13 +68,6 @@ tw_event * io_event_grab(tw_pe *pe) {
     return e;
 }
 
-static void io_init_event_buffers() {
-    g_io_free_events.size = 0;
-    g_io_free_events.head = g_io_free_events.tail = NULL;
-    g_io_buffered_events.size = 0;
-    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
-}
-
 void io_init() {
     int i;
 
@@ -88,7 +81,10 @@ void io_init() {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l_io_total_parts);
     }
 
-    io_init_event_buffers();
+    g_io_free_events.size = 0;
+    g_io_free_events.head = g_io_free_events.tail = NULL;
+    g_io_buffered_events.size = 0;
+    g_io_buffered_events.head = g_io_buffered_events.tail = NULL;
 }
 
 // This run is part of a larger set of DISPARATE runs
