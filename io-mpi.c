@@ -354,7 +354,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
         // Write
         MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY | MPI_MODE_APPEND, MPI_INFO_NULL, &fh);
-        MPI_File_write(fh, &buffer, sum_size, MPI_BYTE, &status);
+        MPI_File_write_at(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
         MPI_File_close(&fh);
 
         my_partitions[cur_kp].offset = offset;
@@ -381,7 +381,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     offset = (long long) sizeof(io_partition) * g_tw_nkp * mpi_rank;
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
-    MPI_File_write(fh, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
+    MPI_File_write_at_all(fh, offset, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
     MPI_File_close(&fh);
 
     // for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
@@ -396,7 +396,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     sprintf(filename, "%s.lp", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
-    MPI_File_write(fh, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
+    MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
     if (l_io_append_flag == 1) {
