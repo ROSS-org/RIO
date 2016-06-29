@@ -31,6 +31,7 @@ static unsigned long l_io_kp_offset = 0;    // MPI_Exscan
 static unsigned long l_io_lp_offset = 0;    // MPI_Exscan
 static unsigned long l0_io_total_kp = 0;    // MPI_Reuced on 0
 static unsigned long l0_io_total_lp = 0;    // MPI_Reuced on 0
+static unsigned long l_io_min_parts = 0;    // MPI_Allreduce
 static int l_io_init_flag = 0;
 static int l_io_append_flag = 0;
 
@@ -76,7 +77,11 @@ void io_init() {
     MPI_Exscan(&g_tw_nkp, &l_io_kp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Exscan(&g_tw_nlp, &l_io_lp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Reduce(&g_tw_nkp, &l0_io_total_kp, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&g_tw_nlp, &l0_io_total_lp, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&g_tw_nlp, &l0_io_total_lp, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // Use collectives where ever possible
+    MPI_Allreduce(&g_tw_nkp, &l_io_min_parts, 1, MPI_UNSIGNED_LONG, MPI_MIN, MPI_COMM_WORLD);
+
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l0_io_total_kp);
     }
@@ -159,7 +164,11 @@ void io_read_checkpoint() {
     }
     for (cur_part = 0; cur_part < g_tw_nkp; cur_part++){
         int data_count = my_partitions[cur_part].lp_count;
-        MPI_File_read_at(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        if (cur_part < l_io_min_parts) {
+            MPI_File_read_at_all(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        } else {
+            MPI_File_read_at(fh, offset, &model_sizes[index], data_count, MPI_UNSIGNED_LONG, &status);
+        }
         index += data_count;
         offset += (long long) data_count * sizeof(size_t);
     }
@@ -178,7 +187,11 @@ void io_read_checkpoint() {
         if (rc != 0) {
             printf("ERROR: could not MPI_File_open %s\n", filename);
         }
-        MPI_File_read_at(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
+        if (cur_part < l_io_min_parts) {
+            MPI_File_read_at_all(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
+        } else {
+            MPI_File_read_at(fh, (long long) my_partitions[cur_part].offset, buffer, my_partitions[cur_part].size, MPI_BYTE, &status);
+        }
         MPI_File_close(&fh);
 
         // Load Data
@@ -347,7 +360,12 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
         // Write
         MPI_File_open(file_comm, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY | MPI_MODE_APPEND, MPI_INFO_NULL, &fh);
-        MPI_File_write_at(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
+        if (cur_kp < l_io_min_parts) {
+            MPI_File_write_at_all(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
+            // possible optimization here: re-calc l_io_min_parts for file_comm
+        } else {
+            MPI_File_write_at(fh, offset, &buffer, sum_size, MPI_BYTE, &status);
+        }
         MPI_File_close(&fh);
 
         my_partitions[cur_kp].offset = offset;
