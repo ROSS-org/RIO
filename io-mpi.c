@@ -14,7 +14,6 @@ io_partition * g_io_partitions;
 
 // Default Values
 int g_io_number_of_files = 1;
-unsigned long g_io_partitions_offset = 0;
 io_lptype * g_io_lp_types = NULL;
 io_load_type g_io_load_at = NONE;
 char g_io_checkpoint_name[1024];
@@ -23,6 +22,8 @@ tw_eventq g_io_buffered_events;
 tw_eventq g_io_free_events;
 
 // Local Variables
+static unsigned long l_io_kp_offset = 0;
+static unsigned long l_io_lp_offset = 0;
 static unsigned long l_io_total_parts = 0;
 static int l_io_init_flag = 0;
 static int l_io_append_flag = 0;
@@ -80,7 +81,8 @@ void io_init() {
     assert(l_io_init_flag == 0 && "ERROR: RIO system already initialized");
     l_io_init_flag = 1;
 
-    MPI_Exscan(&g_tw_nkp, &g_io_partitions_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Exscan(&g_tw_nkp, &l_io_kp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Exscan(&g_tw_nlp, %l_io_lp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Reduce(&g_tw_nkp, &l_io_total_parts, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l_io_total_parts);
@@ -124,8 +126,7 @@ void io_read_checkpoint() {
     MPI_Type_commit(&MPI_IO_PART);
     int partition_md_size;
     MPI_Type_size(MPI_IO_PART, &partition_md_size);
-    MPI_Offset offset = (long long) partition_md_size * g_io_partitions_offset;
-
+    MPI_Offset offset = (long long) partition_md_size * l_io_partitions_offset;
 
     io_partition my_partitions[g_tw_nkp];
 
@@ -136,6 +137,12 @@ void io_read_checkpoint() {
     }
 	MPI_File_read_at_all(fh, offset, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
     MPI_File_close(&fh);
+
+    // for (i = 0; i < g_tw_nkp; i++) {
+    //     printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+    //         my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
+    //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
+    // }
 
     // error check
     int count_sum = 0;
@@ -165,12 +172,6 @@ void io_read_checkpoint() {
         offset += (long long) data_count * sizeof(size_t);
     }
     MPI_File_close(&fh);
-
-    // for (i = 0; i < g_tw_nkp; i++) {
-    //     printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-    //         my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-    //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
-    // }
 
     // DATA FILES
     int all_lp_i = 0;
@@ -323,10 +324,6 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
         // ** START Serialize **
 
-        // printf("Rank %d storing metadata\n\tpart %d\n\tfile %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-        //     my_partitions[cur_kp].part, my_partitions[cur_kp].file,
-        //     my_partitions[cur_kp].size, my_partitions[cur_kp].lp_count, my_partitions[cur_kp].ev_count);
-
         int sum_size = my_partitions[cur_kp].size;
         int event_count = my_partitions[cur_kp].ev_count;
         int lps_on_kp = my_partitions[cur_kp].lp_count;
@@ -386,6 +383,12 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write(fh, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
     MPI_File_close(&fh);
+
+    // for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
+    //     printf("Rank %d storing metadata\n\tpart %d\n\tfile %d\n\toffset:\t%lu\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+    //         my_partitions[cur_kp].part, my_partitions[cur_kp].file, my_partitions[cur_kp].offset,
+    //         my_partitions[cur_kp].size, my_partitions[cur_kp].lp_count, my_partitions[cur_kp].ev_count);
+    // }
 
     // Write model size array
     offset = (long long) 0;
