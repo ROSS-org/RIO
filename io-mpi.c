@@ -78,7 +78,7 @@ void io_init() {
     MPI_Reduce(&g_tw_nkp, &l0_io_total_kp, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&g_tw_nlp, &l0_io_total_lp, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     if (g_tw_mynode == 0) {
-        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l_io_total_parts);
+        printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l0_io_total_kp);
     }
 
     g_io_free_events.size = 0;
@@ -421,10 +421,10 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         fprintf(file, "Checkpoint:\t%s\n", master_filename);
         if (l_io_append_flag == 0) {
             fprintf(file, "Data Files:\t%d\n", g_io_number_of_files);
-            fprintf(file, "Partitions:\t%lu\n", l_io_total_parts);
+            fprintf(file, "Partitions:\t%lu\n", l0_io_total_kp);
         } else {
             fprintf(file, "Data Files:\t%d+?\n", g_io_number_of_files);
-            fprintf(file, "Partitions:\t%lu+?\n", l_io_total_parts);
+            fprintf(file, "Partitions:\t%lu+?\n", l0_io_total_kp);
         }
 #ifdef RAND_NORMAL
         fprintf(file, "RAND_NORMAL\tON\n");
@@ -434,10 +434,10 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
         if (l_io_append_flag == 0) {
             fprintf(file, "Total Events:\t%d\n", global_events);
-            fprintf(file, "Total LPs:\t%d\n", global_lps);
+            fprintf(file, "Total LPs:\t%lu\n", l0_io_total_lp);
         } else {
             fprintf(file, "Total Events:\t%d+?\n", global_events);
-            fprintf(file, "Total LPs:\t%d+?\n", global_lps);
+            fprintf(file, "Total LPs:\t%lu+?\n", l0_io_total_lp);
         }
 
         fprintf(file, "\n## RUN TIME SETTINGS by GROUP:\n\n");
