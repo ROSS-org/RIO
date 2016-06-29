@@ -82,7 +82,7 @@ void io_init() {
     l_io_init_flag = 1;
 
     MPI_Exscan(&g_tw_nkp, &l_io_kp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Exscan(&g_tw_nlp, %l_io_lp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Exscan(&g_tw_nlp, &l_io_lp_offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Reduce(&g_tw_nkp, &l_io_total_parts, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     if (g_tw_mynode == 0) {
         printf("*** IO SYSTEM INIT ***\n\tFiles: %d\n\tParts: %lu\n\n", g_io_number_of_files, l_io_total_parts);
@@ -126,7 +126,7 @@ void io_read_checkpoint() {
     MPI_Type_commit(&MPI_IO_PART);
     int partition_md_size;
     MPI_Type_size(MPI_IO_PART, &partition_md_size);
-    MPI_Offset offset = (long long) partition_md_size * l_io_partitions_offset;
+    MPI_Offset offset = (long long) partition_md_size * l_io_kp_offset;
 
     io_partition my_partitions[g_tw_nkp];
 
@@ -152,11 +152,7 @@ void io_read_checkpoint() {
     assert(count_sum == g_tw_nlp && "ERROR: wrong number of LPs in partitions");
 
     // read size array
-    offset = (long long) 0;
-    long long contribute = (long long) g_tw_nlp;
-    MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    offset *= sizeof(size_t);
-
+    offset = sizeof(size_t) * l_io_lp_offset;
     size_t * model_sizes = (size_t *) calloc(g_tw_nlp, sizeof(size_t));
     int index = 0;
 
@@ -301,7 +297,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         int sum_lp_size = lps_on_kp * lp_size;
         int sum_size = sum_lp_size + sum_model_size + sum_event_size;
 
-        my_partitions[cur_kp].part = cur_kp;
+        my_partitions[cur_kp].part = cur_kp + l_io_kp_offset;
         my_partitions[cur_kp].file = file_number;
         my_partitions[cur_kp].size = sum_size;
         my_partitions[cur_kp].lp_count = lps_on_kp;
@@ -314,7 +310,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 
     // MPI EXSCAN FOR OFFSET
     if (file_comm_count > 1) {
-        offset = MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
+        MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
     } else {
         offset = (long long) 0;
     }
@@ -378,7 +374,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     int psize;
     MPI_Type_size(MPI_IO_PART, &psize);
 
-    offset = (long long) sizeof(io_partition) * g_tw_nkp * mpi_rank;
+    offset = (long long) sizeof(io_partition) * l_io_kp_offset;
     sprintf(filename, "%s.mh", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
@@ -391,9 +387,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     // }
 
     // Write model size array
-    offset = (long long) 0;
-    contribute = (long long) g_tw_nlp;
-    MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    offset = sizeof(size_t) * l_io_lp_offset;
     sprintf(filename, "%s.lp", master_filename);
     MPI_File_open(MPI_COMM_WORLD, filename, amode, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, all_lp_sizes, g_tw_nlp, MPI_UNSIGNED_LONG, &status);
