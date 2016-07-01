@@ -323,11 +323,9 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     }
 
     // MPI EXSCAN FOR OFFSET
+    offset = (long long) 0;
     if (file_comm_count > 1) {
-        offset = 0;
         MPI_Exscan(&contribute, &offset, 1, MPI_LONG_LONG, MPI_SUM, file_comm);
-    } else {
-        offset = (long long) 0;
     }
 
     int global_lp_i = 0;
