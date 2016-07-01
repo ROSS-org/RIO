@@ -9,6 +9,8 @@
 #include "ross.h"
 #include "io-config.h"
 
+//#define RIO_DEBUG
+
 // Command Line Options
 int g_io_number_of_files = 1;
 const tw_optdef io_opts[] = {
@@ -139,11 +141,13 @@ void io_read_checkpoint() {
 	MPI_File_read_at_all(fh, offset, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
     MPI_File_close(&fh);
 
-    // for (i = 0; i < g_tw_nkp; i++) {
-    //     printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-    //         my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
-    //         my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
-    // }
+#ifdef RIO_DEBUG
+    for (i = 0; i < g_tw_nkp; i++) {
+        printf("Rank %d read metadata\n\tpart %d\n\tfile %d\n\toffset %d\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+            my_partitions[i].part, my_partitions[i].file, my_partitions[i].offset,
+            my_partitions[i].size, my_partitions[i].lp_count, my_partitions[i].ev_count);
+    }
+#endif
 
     // error check
     int count_sum = 0;
@@ -395,11 +399,13 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
     MPI_File_write_at_all(fh, offset, &my_partitions, g_tw_nkp, MPI_IO_PART, &status);
     MPI_File_close(&fh);
 
-    // for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
-    //     printf("Rank %d storing metadata\n\tpart %d\n\tfile %d\n\toffset:\t%lu\n\tsize %d\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
-    //         my_partitions[cur_kp].part, my_partitions[cur_kp].file, my_partitions[cur_kp].offset,
-    //         my_partitions[cur_kp].size, my_partitions[cur_kp].lp_count, my_partitions[cur_kp].ev_count);
-    // }
+#ifdef RIO_DEBUG
+    for (cur_kp = 0; cur_kp < g_tw_nkp; cur_kp++) {
+        printf("Rank %d storing metadata\n\tpart %d\n\tfile %d\n\toffset:\t%lu\n\tsize %lu\n\tlp count %d\n\tevents %d\n\n", mpi_rank,
+            my_partitions[cur_kp].part, my_partitions[cur_kp].file, my_partitions[cur_kp].offset,
+            my_partitions[cur_kp].size, my_partitions[cur_kp].lp_count, my_partitions[cur_kp].ev_count);
+    }
+#endif
 
     // Write model size array
     offset = sizeof(size_t) * l_io_lp_offset;
