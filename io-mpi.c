@@ -67,7 +67,13 @@ tw_event * io_event_grab(tw_pe *pe) {
         e = pe->abort_event;
     }
     pe->stats.s_rio_load += (tw_clock_read() - start);
+    e->state.owner = IO_buffer;
     return e;
+}
+
+void io_event_cancel(tw_event *e) {
+    tw_eventq_delete_any(&g_io_buffered_events, e);
+    tw_eventq_push(&g_io_free_events, e);
 }
 
 void io_init() {

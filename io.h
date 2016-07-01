@@ -83,6 +83,7 @@ extern io_partition * g_io_partitions;
 
 // Functions Called Directly from ROSS
 void io_load_events(tw_pe * me);
+void io_event_cancel(tw_event *e);
 void io_read_checkpoint();
 
 // SERIALIZE FUNCTIONS for LP and EVENT structs
