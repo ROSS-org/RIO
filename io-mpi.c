@@ -102,7 +102,7 @@ void io_init() {
 
 // This run is part of a larger set of DISPARATE runs
 // append the .md and .lp files
-static void io_appending_job() {
+void io_appending_job() {
     if (l_io_init_flag == 1) {
         l_io_append_flag = 1;
     }

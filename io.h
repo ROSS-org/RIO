@@ -35,6 +35,7 @@ void io_init();
 
 void io_load_checkpoint(char * master_filename, io_load_type load_at);
 void io_store_checkpoint(char * master_filename, int data_file_number);
+void io_appending_job();
 
 // LP type map and function struct
 typedef void (*serialize_f)(void * state, void * buffer, tw_lp *lp);
