@@ -207,7 +207,8 @@ void io_read_checkpoint() {
         // Load Data
         for (i = 0; i < my_partitions[cur_part].lp_count; i++, all_lp_i++) {
             b += io_lp_deserialize(g_tw_lp[all_lp_i], b);
-            ((deserialize_f)g_io_lp_types[0].deserialize)(g_tw_lp[all_lp_i]->cur_state, b, g_tw_lp[all_lp_i]);
+            int lp_type_index = g_tw_lp_typemap(g_tw_lp[all_lp_i]->gid);
+            ((deserialize_f)g_io_lp_types[lp_type_index].deserialize)(g_tw_lp[all_lp_i]->cur_state, b, g_tw_lp[all_lp_i]);
             b += model_sizes[all_lp_i];
         }
         assert(my_partitions[cur_part].ev_count <= g_io_free_events.size);
