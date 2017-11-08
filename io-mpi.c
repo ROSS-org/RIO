@@ -22,6 +22,7 @@ const tw_optdef io_opts[] = {
 // User-Set Variable Initializations
 io_partition * g_io_partitions;
 io_lptype * g_io_lp_types = NULL;
+io_lptype * io_lp_type_registry = NULL;
 io_load_type g_io_load_at = NONE;
 char g_io_checkpoint_name[1024];
 int g_io_events_buffered_per_rank = 0;
@@ -501,4 +502,44 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
         fprintf(file, "\n## RUN TIME SETTINGS\n\n");
         tw_opt_settings(file);
     }
+}
+
+/* Initializes the size of the g_io_lp_types so that lptypes can be registered
+* 		This is necessary as complicated models may not have a singular location where all LP types
+* 		can be defined or referenced in a single file. Overcomes scope issues with the Codes simulator
+* @param total_lp_types the total number of unique LP types that need their own io_lptype struct
+* @note LP types that are derivative and super'd by the codes modelnet_base_lp should not be
+*		considered in this count. They are considered modelnet_base_lps.
+*/
+void io_init_lp_types(size_t total_lp_types)
+{
+    io_lp_type_registry = calloc(total_lp_types, sizeof(io_lptype));
+}
+
+/* Registers an io_lptype with RIO. Not necessary if g_io_lp_types is manually defined.
+* 		This is necessary as complicated models may not have a singular location where all LP types
+* 		can be defined or referenced in a single file. Overcomes scope issues with the Codes simulator
+* @param new_lptype io_lptype struct necessary to serialize/deserialize the LP related to it
+* @param size_t map_position where in the g_tw_lp_typemap is the LP that relates to these io_lptypes
+* @note codes does not initialize g_tw_lp_typemap or g_tw_lp_types
+*/
+void io_register_lp_type(io_lptype * new_lptype, size_t map_position)
+{
+    io_lp_type_registry[map_position] = *new_lptype;
+}
+
+void io_finalize_registry()
+{
+    g_io_lp_types = io_lp_type_registry;
+}
+
+// void io_register_lp_typemap(tw_typemap_f * typemap_fun_ptr)
+// {
+//     g_tw_lp_typemap = typemap_fun_ptr;
+// }
+
+/* Cleans up the g_io_lp_types variable as RIO alloc's this during io_init_lp_types() */
+void io_cleanup_lp_types()
+{
+    free(io_lp_type_registry);
 }
