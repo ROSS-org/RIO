@@ -513,7 +513,7 @@ void io_store_checkpoint(char * master_filename, int data_file_number) {
 */
 void io_init_lp_types(size_t total_lp_types)
 {
-    io_lp_type_registry = calloc(total_lp_types, sizeof(io_lptype));
+    io_lp_type_registry = calloc(total_lp_types+1, sizeof(io_lptype));
 }
 
 /* Registers an io_lptype with RIO. Not necessary if g_io_lp_types is manually defined.
