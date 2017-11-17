@@ -204,13 +204,19 @@ void io_read_checkpoint() {
         }
         MPI_File_close(&fh);
 
-        // Load Data
-        for (i = 0; i < my_partitions[cur_part].lp_count; i++, all_lp_i++) {
-            b += io_lp_deserialize(g_tw_lp[all_lp_i], b);
-            int lp_type_index = g_tw_lp_typemap(g_tw_lp[all_lp_i]->gid);
-            ((deserialize_f)g_io_lp_types[lp_type_index].deserialize)(g_tw_lp[all_lp_i]->cur_state, b, g_tw_lp[all_lp_i]);
-            b += model_sizes[all_lp_i];
+
+        // Load LPs
+        int c;
+        for (c = 0; c < g_tw_nlp; c++) {
+            if (g_tw_lp[c]->kp->id == cur_part) {
+                b += io_lp_deserialize(g_tw_lp[c], b);
+                int lp_type_index = g_tw_lp_typemap(g_tw_lp[c]->gid);
+                ((deserialize_f)g_io_lp_types[lp_type_index].deserialize)(g_tw_lp[c]->cur_state, b, g_tw_lp[c]);
+                b += model_sizes[all_lp_i];
+                all_lp_i++;
+            }
         }
+
         assert(my_partitions[cur_part].ev_count <= g_io_free_events.size);
         for (i = 0; i < my_partitions[cur_part].ev_count; i++) {
             // SEND THESE EVENTS
