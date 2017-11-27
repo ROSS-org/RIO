@@ -55,7 +55,11 @@ size_t io_event_serialize (tw_event *e, void *buffer) {
     memcpy(&(tmp.cv), &(e->cv), sizeof(tw_bf));
     tmp.dest_lp = (tw_lpid)e->dest_lp; // ROSS HACK: dest_lp is gid
     tmp.src_lp = e->src_lp->gid;
-    tmp.recv_ts = e->recv_ts - g_tw_ts_end;
+    tmp.recv_ts = e->recv_ts;
+    if(g_io_evt_ts_mode == 0)
+        tmp.recv_ts -= g_tw_ts_end;
+
+
 
     memcpy(buffer, &tmp, sizeof(io_event_store));
     // printf("Storing event going to %lu at %f\n", tmp.dest_lp, tmp.recv_ts);

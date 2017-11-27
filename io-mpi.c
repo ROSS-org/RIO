@@ -13,9 +13,13 @@
 
 // Command Line Options
 int g_io_number_of_files = 1;
+unsigned int g_io_store = 2;
+unsigned int g_io_evt_ts_mode = 0;
 const tw_optdef io_opts[] = {
     TWOPT_GROUP("RIO"),
     TWOPT_UINT("io-files", g_io_number_of_files, "io files"),
+    TWOPT_UINT("io-store", g_io_store, "io store mode (0 Load | 1 Save | 2 Disable"),
+    TWOPT_UINT("io-evt-ts-mode", g_io_evt_ts_mode, "post-simulation event timestep mode (0 Reset (default) | 1 Unaltered"),
     TWOPT_END()
 };
 

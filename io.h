@@ -10,9 +10,17 @@
 // Set with command line --io-files
 // should be consistent across the system
 extern int g_io_number_of_files;
+// Set with command line --io_store
+extern unsigned int g_io_store;
+// Set with command line --io-evt-ts-mode
+// Determines how event timestamps are serialized, default Mode 0 makes the serialize timestamp be (evt_ts - g_tw_ts_end)
+// Mode 1 leaves the timestamp unaltered, i.e. serialized timestamp = evt_ts
+extern unsigned int g_io_evt_ts_mode;
+
+
 
 // Register opts with ROSS
-extern const tw_optdef io_opts[3];
+extern const tw_optdef io_opts[5];
 
 enum io_load_e {
 	NONE,		// default value
